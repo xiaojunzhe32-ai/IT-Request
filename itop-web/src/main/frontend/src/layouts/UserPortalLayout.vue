@@ -85,7 +85,7 @@ const handleCommand = (command: string) => {
   z-index: 20;
   height: 64px;
   display: grid;
-  grid-template-columns: 260px minmax(0, 1fr) auto;
+  grid-template-columns: 300px minmax(0, 1fr) auto;
   align-items: center;
   gap: 18px;
   padding: 0 28px;

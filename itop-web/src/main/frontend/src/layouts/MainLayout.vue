@@ -201,10 +201,10 @@ const handleCommand = (command: string) => {
 }
 
 .brand-lockup {
-  height: 70px;
+  height: 78px;
   display: flex;
   align-items: center;
-  padding: 0 16px;
+  padding: 0 14px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 

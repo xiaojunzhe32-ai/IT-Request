@@ -17,17 +17,17 @@ defineProps<{
 <style scoped lang="scss">
 .brand-logo {
   display: grid;
-  gap: 5px;
+  gap: 6px;
   min-width: 0;
 }
 
 .brand-logo__plate {
-  width: 148px;
-  height: 34px;
+  width: 190px;
+  height: 44px;
   display: flex;
   align-items: center;
-  padding: 5px 9px;
-  border-radius: 10px;
+  padding: 7px 12px;
+  border-radius: 12px;
   background: #fff;
   border: 1px solid rgba(255, 255, 255, 0.18);
   box-shadow: 0 10px 24px rgba(0, 0, 128, 0.16);
@@ -41,7 +41,7 @@ defineProps<{
 
 .brand-logo span {
   color: rgba(255, 255, 255, 0.62);
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1;
 }
 

@@ -263,6 +263,7 @@ const handleLogin = async () => {
   display: flex;
   align-items: center;
   gap: 14px;
+  flex-wrap: wrap;
 }
 
 .brand-intro strong,
