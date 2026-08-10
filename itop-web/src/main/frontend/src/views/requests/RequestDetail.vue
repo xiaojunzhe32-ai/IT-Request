@@ -208,8 +208,14 @@
               :timestamp="formatDateTime(item.time)"
               placement="top"
             >
-              <strong>{{ item.action }}</strong>
-              <p>{{ item.actor }} - {{ item.detail }}</p>
+              <strong class="history-action">{{ formatHistoryAction(item.action) }}</strong>
+              <div class="history-detail">
+                <span class="history-chip actor">{{ item.actor }}</span>
+                <template v-for="(part, index) in formatHistoryParts(item)" :key="`${item.id}-${index}`">
+                  <span v-if="part.kind === 'text'" class="history-text">{{ part.text }}</span>
+                  <span v-else class="history-chip" :class="part.kind">{{ part.text }}</span>
+                </template>
+              </div>
             </el-timeline-item>
           </el-timeline>
         </el-card>
@@ -246,7 +252,7 @@ import { requestApi } from '@/api/requests'
 import { attachmentApi } from '@/api/attachments'
 import { userApi } from '@/api/system'
 import { requestStatuses, sanitizeRequestHtml } from '@/data/requestOptions'
-import type { RequestAttachment, RequestStatus, WorkflowRequest } from '@/types/requests'
+import type { RequestAttachment, RequestHistoryItem, RequestStatus, WorkflowRequest } from '@/types/requests'
 import type { SystemUser } from '@/types/system'
 import { formatDateTime } from '@/utils/format'
 
@@ -254,6 +260,11 @@ interface AssigneeOption {
   id: number
   name: string
   organization: string
+}
+
+interface HistoryPart {
+  text: string
+  kind: 'text' | 'status' | 'target' | 'team'
 }
 
 const route = useRoute()
@@ -347,6 +358,41 @@ const hasStatusChange = computed(() => statusDraft.value !== request.value.statu
 const hasAssignmentChange = computed(() => assignment.assigneeId !== request.value.agentId)
 const hasUnsavedChanges = computed(() => hasStatusChange.value || hasAssignmentChange.value)
 const safeDescriptionHtml = ref('')
+
+const formatHistoryAction = (action: string) => action
+  .replace(/_/g, ' ')
+  .toLowerCase()
+  .replace(/\b\w/g, (letter) => letter.toUpperCase())
+
+const formatHistoryParts = (item: RequestHistoryItem): HistoryPart[] => {
+  const detail = item.detail || ''
+  const statusMatch = detail.match(/^(.+?)\s*->\s*(.+?)\.?$/)
+  if (statusMatch) {
+    return [
+      { text: 'changed from', kind: 'text' },
+      { text: statusMatch[1].trim(), kind: 'status' },
+      { text: 'to', kind: 'text' },
+      { text: statusMatch[2].replace(/\.$/, '').trim(), kind: 'status' }
+    ]
+  }
+
+  const assignmentMatch = detail.match(/^Assigned to (.+?)(?: in (.+?))?\.?$/)
+  if (assignmentMatch) {
+    const parts: HistoryPart[] = [
+      { text: 'assigned to', kind: 'text' },
+      { text: assignmentMatch[1].trim(), kind: 'target' }
+    ]
+    if (assignmentMatch[2]) {
+      parts.push(
+        { text: 'in', kind: 'text' },
+        { text: assignmentMatch[2].replace(/\.$/, '').trim(), kind: 'team' }
+      )
+    }
+    return parts
+  }
+
+  return [{ text: detail, kind: 'text' }]
+}
 
 const clearInlineBlobUrls = () => {
   inlineBlobUrls.forEach((url) => URL.revokeObjectURL(url))
@@ -734,8 +780,7 @@ onBeforeUnmount(() => {
 }
 
 .comment-meta span,
-.comment-item p,
-.history-timeline p {
+.comment-item p {
   color: #667085;
   font-size: 12px;
 }
@@ -763,9 +808,62 @@ onBeforeUnmount(() => {
   padding-left: 4px;
 }
 
-.history-timeline strong {
+.history-action {
+  display: inline-block;
+  margin-bottom: 6px;
   color: #111827;
   font-size: 12px;
+  letter-spacing: 0;
+}
+
+.history-detail {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px;
+  color: #667085;
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.history-text {
+  color: #667085;
+}
+
+.history-chip {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+.history-chip.actor {
+  color: #000080;
+  background: #eef2ff;
+  border: 1px solid #c7d2fe;
+}
+
+.history-chip.status {
+  color: #027a48;
+  background: #dcfae6;
+  border: 1px solid #abefc6;
+}
+
+.history-chip.target {
+  color: #b42318;
+  background: #fee4e2;
+  border: 1px solid #fecdca;
+}
+
+.history-chip.team {
+  color: #344054;
+  background: #f2f4f7;
+  border: 1px solid #d0d5dd;
 }
 
 .unsaved-copy {
