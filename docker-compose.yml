@@ -35,6 +35,7 @@ services:
     build:
       context: .
       dockerfile: itop-api/Dockerfile
+    image: itop-api:latest
     container_name: itop-api
     restart: unless-stopped
     depends_on:
@@ -77,6 +78,7 @@ services:
     build:
       context: .
       dockerfile: itop-web/Dockerfile
+    image: itop-web:latest
     container_name: itop-web
     restart: unless-stopped
     depends_on:
