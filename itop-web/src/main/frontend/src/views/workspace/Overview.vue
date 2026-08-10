@@ -6,7 +6,7 @@
       description="Monitor request intake, assignment, handling and internal testing from one operational view."
     >
       <template #actions>
-        <el-button @click="router.push('/workspace/assignment')">Open Assignment</el-button>
+        <el-button v-if="canAssignRequests" @click="router.push('/workspace/assignment')">Open Assignment</el-button>
         <el-button type="primary" @click="router.push('/workspace/team-queue')">
           <el-icon><Tickets /></el-icon>
           Team Queue
@@ -73,11 +73,14 @@ import RequestStatusTag from '@/components/RequestStatusTag.vue'
 import RequestTable from '@/components/RequestTable.vue'
 import { requestApi } from '@/api/requests'
 import { requestStatuses } from '@/data/requestOptions'
+import { useUserStore } from '@/stores/user'
 import type { WorkflowRequest } from '@/types/requests'
 
 const router = useRouter()
+const userStore = useUserStore()
 const loading = ref(false)
 const requests = ref<WorkflowRequest[]>([])
+const canAssignRequests = computed(() => userStore.hasPermission('request:assign'))
 const activeRequests = computed(() => requests.value.filter((item) => item.status !== 'Closed'))
 const testingCount = computed(() => requests.value.filter((item) => item.status === 'Testing').length)
 const failedCount = computed(() => requests.value.filter((item) => item.status === 'User Test Failed').length)
