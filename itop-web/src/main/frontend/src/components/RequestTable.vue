@@ -8,14 +8,14 @@
       highlight-current-row
       @row-click="openRequest"
     >
-      <el-table-column label="Request" min-width="280" show-overflow-tooltip>
+      <el-table-column label="Title" min-width="280" show-overflow-tooltip>
         <template #default="{ row }">
           <div class="request-title-cell">
-            <strong>{{ row.requestNo }}</strong>
-            <span>{{ row.title }}</span>
+            <strong>{{ row.title }}</strong>
           </div>
         </template>
       </el-table-column>
+      <el-table-column prop="requestNo" label="Request No." width="170" sortable show-overflow-tooltip />
       <el-table-column prop="type" label="Type" width="150" show-overflow-tooltip />
       <el-table-column prop="priority" label="Priority" width="110">
         <template #default="{ row }">
@@ -112,14 +112,6 @@ const handleCommand = (command: string, row: WorkflowRequest) => {
 .request-title-cell strong {
   color: #111827;
   font-size: 13px;
-}
-
-.request-title-cell span {
-  color: #667085;
-  font-size: 12px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .muted {
