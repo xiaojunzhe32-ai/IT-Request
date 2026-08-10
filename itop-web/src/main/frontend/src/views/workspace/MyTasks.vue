@@ -74,6 +74,12 @@ const columns = computed(() => [
   {
     title: 'Testing',
     items: assignedToMe.value.filter((item) => item.status === 'Testing')
+  },
+  {
+    title: 'Completed',
+    items: requests.value
+      .filter((item) => item.status === 'Resolved' || item.status === 'Closed')
+      .sort((left, right) => new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime())
   }
 ])
 
@@ -107,7 +113,7 @@ onMounted(loadTasks)
 
 .task-columns {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 16px;
 }
 
