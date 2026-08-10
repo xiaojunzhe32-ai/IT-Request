@@ -97,55 +97,55 @@ const routes: RouteRecordRaw[] = [
         path: 'dashboard',
         name: 'Dashboard',
         component: () => import('@/views/dashboard/index.vue'),
-        meta: { title: 'Dashboard', icon: 'Odometer' }
+        meta: { title: 'Dashboard', icon: 'Odometer', adminOnly: true }
       },
       {
         path: 'organizations',
         name: 'Organizations',
         component: () => import('@/views/cmdb/OrganizationList.vue'),
-        meta: { title: 'Organizations', icon: 'OfficeBuilding', permission: 'org:read' }
+        meta: { title: 'Organizations', icon: 'OfficeBuilding', adminOnly: true }
       },
       {
         path: 'users',
         name: 'Users',
         component: () => import('@/views/system/UserList.vue'),
-        meta: { title: 'Users', icon: 'User', permission: 'user:read' }
+        meta: { title: 'Users', icon: 'User', adminOnly: true }
       },
       {
         path: 'roles',
         name: 'Roles',
         component: () => import('@/views/system/RoleList.vue'),
-        meta: { title: 'Roles', icon: 'Key', permission: 'role:read' }
+        meta: { title: 'Roles', icon: 'Key', adminOnly: true }
       },
       {
         path: 'permissions',
         name: 'Permissions',
         component: () => import('@/views/system/PermissionList.vue'),
-        meta: { title: 'Permissions', icon: 'Lock', permission: 'role:read' }
+        meta: { title: 'Permissions', icon: 'Lock', adminOnly: true }
       },
       {
         path: 'teams',
         name: 'Teams',
         component: () => import('@/views/system/TeamList.vue'),
-        meta: { title: 'Teams', icon: 'UserFilled', permission: 'team:read' }
+        meta: { title: 'Teams', icon: 'UserFilled', adminOnly: true }
       },
       {
         path: 'routing-rules',
         name: 'RoutingRules',
         component: () => import('@/views/system/RoutingRules.vue'),
-        meta: { title: 'Routing Rules', icon: 'Connection', permission: 'routing:read' }
+        meta: { title: 'Routing Rules', icon: 'Connection', adminOnly: true }
       },
       {
         path: 'requests',
         name: 'AllRequests',
         component: () => import('@/views/system/RequestList.vue'),
-        meta: { title: 'All Requests', icon: 'Tickets', permission: 'request:read' }
+        meta: { title: 'All Requests', icon: 'Tickets', adminOnly: true }
       },
       {
         path: 'audit-logs',
         name: 'AuditLogs',
         component: () => import('@/views/system/AuditLogList.vue'),
-        meta: { title: 'Audit Logs', icon: 'Document', permission: 'audit:read' }
+        meta: { title: 'Audit Logs', icon: 'Document', adminOnly: true }
       }
     ]
   }
@@ -164,6 +164,15 @@ router.beforeEach(async (to, from, next) => {
     next('/login')
   } else if (to.path === '/login' && token) {
     next(localStorage.getItem('userRoles')?.includes('REQUESTER') ? '/portal' : '/workspace/overview')
+  } else if (to.meta.adminOnly) {
+    if (!userStore.user) {
+      await userStore.fetchCurrentUser()
+    }
+    if (userStore.isAdmin) {
+      next()
+    } else {
+      next('/workspace/overview')
+    }
   } else if (to.meta.permission) {
     if (!userStore.user) {
       await userStore.fetchCurrentUser()

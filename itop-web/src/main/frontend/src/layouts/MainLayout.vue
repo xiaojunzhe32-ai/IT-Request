@@ -38,40 +38,40 @@
           <span>Assignment</span>
         </el-menu-item>
 
-        <div v-show="!isCollapse" class="menu-section">Admin Console</div>
+        <div v-if="userStore.isAdmin" v-show="!isCollapse" class="menu-section">Admin Console</div>
         <el-menu-item index="/dashboard" v-if="userStore.isAdmin">
           <el-icon><Odometer /></el-icon>
           <span>Admin Overview</span>
         </el-menu-item>
-        <el-menu-item index="/requests" v-if="canShowMenu('request:read')">
+        <el-menu-item index="/requests" v-if="userStore.isAdmin">
           <el-icon><Tickets /></el-icon>
           <span>Requests</span>
         </el-menu-item>
-        <el-menu-item index="/organizations" v-if="canShowMenu('org:read')">
+        <el-menu-item index="/organizations" v-if="userStore.isAdmin">
           <el-icon><OfficeBuilding /></el-icon>
           <span>Organizations</span>
         </el-menu-item>
-        <el-menu-item index="/users" v-if="canShowMenu('user:read')">
+        <el-menu-item index="/users" v-if="userStore.isAdmin">
           <el-icon><User /></el-icon>
           <span>Users</span>
         </el-menu-item>
-        <el-menu-item index="/roles" v-if="canShowMenu('role:read')">
+        <el-menu-item index="/roles" v-if="userStore.isAdmin">
           <el-icon><Key /></el-icon>
           <span>Roles</span>
         </el-menu-item>
-        <el-menu-item index="/permissions" v-if="canShowMenu('role:read')">
+        <el-menu-item index="/permissions" v-if="userStore.isAdmin">
           <el-icon><Lock /></el-icon>
           <span>Permissions</span>
         </el-menu-item>
-        <el-menu-item index="/teams" v-if="canShowMenu('team:read')">
+        <el-menu-item index="/teams" v-if="userStore.isAdmin">
           <el-icon><UserFilled /></el-icon>
           <span>Teams</span>
         </el-menu-item>
-        <el-menu-item index="/routing-rules" v-if="canShowMenu('routing:read')">
+        <el-menu-item index="/routing-rules" v-if="userStore.isAdmin">
           <el-icon><Connection /></el-icon>
           <span>Routing Rules</span>
         </el-menu-item>
-        <el-menu-item index="/audit-logs" v-if="canShowMenu('audit:read')">
+        <el-menu-item index="/audit-logs" v-if="userStore.isAdmin">
           <el-icon><Document /></el-icon>
           <span>Audit Logs</span>
         </el-menu-item>
