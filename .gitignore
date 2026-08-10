@@ -1,0 +1,37 @@
+# dependencies / build
+node_modules/
+target/
+dist/
+build/
+.npm-cache/
+.cache/
+output/
+.playwright-cli/
+.agents/
+.codex/
+.ui-audit/
+.claude/
+.vscode/
+*.log
+*.tmp
+.DS_Store
+Thumbs.db
+
+# env
+.env
+.env.local
+.env.*.local
+
+# IDE / OS
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+
+# python cache
+__pycache__/
+*.pyc
+
+# cloned ponytail repo (install separately)
+ponytail/

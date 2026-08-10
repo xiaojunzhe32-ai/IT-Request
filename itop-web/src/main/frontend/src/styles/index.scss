@@ -1,0 +1,235 @@
+﻿@import './variables.scss';
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+  font-family: 'Segoe UI Variable Text', 'Segoe UI', Inter, 'Helvetica Neue', Arial, sans-serif;
+  background: $bg-color;
+  color: $text-primary;
+  letter-spacing: 0;
+}
+
+html,
+body {
+  overflow-x: hidden;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+.el-menu {
+  border-right: none !important;
+}
+
+.el-aside {
+  transition: width 0.24s ease;
+}
+
+.el-header {
+  padding: 0;
+}
+
+.el-main {
+  min-width: 0;
+  padding: 20px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.46) 0%, rgba(255, 255, 255, 0) 160px),
+    $bg-color;
+}
+
+.el-table {
+  border-radius: 8px;
+}
+
+.el-card {
+  border-radius: 10px;
+}
+
+.el-card__header {
+  padding: 14px 18px;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.07);
+}
+
+.el-card__body {
+  padding: 18px;
+}
+
+.el-button {
+  border-radius: 8px;
+  font-weight: 700;
+}
+
+.el-button--primary {
+  --el-button-bg-color: #{$primary-color};
+  --el-button-border-color: #{$primary-color};
+  --el-button-hover-bg-color: #{$primary-hover};
+  --el-button-hover-border-color: #{$primary-hover};
+  --el-button-active-bg-color: #b45309;
+  --el-button-active-border-color: #b45309;
+}
+
+.el-input__wrapper,
+.el-select__wrapper,
+.el-textarea__inner {
+  border-radius: 8px;
+  box-shadow: 0 0 0 1px #d8dee6 inset;
+}
+
+.el-input__wrapper:hover,
+.el-select__wrapper:hover,
+.el-textarea__inner:hover {
+  box-shadow: 0 0 0 1px #c8d0da inset;
+}
+
+.el-table {
+  --el-table-header-bg-color: #f8fafc;
+  --el-table-header-text-color: #475467;
+  --el-table-row-hover-bg-color: #fff7ed;
+  color: #344054;
+  font-size: 13px;
+}
+
+.el-table th.el-table__cell {
+  font-weight: 800;
+}
+
+.el-table .cell {
+  line-height: 1.4;
+}
+
+.el-dialog {
+  border-radius: 12px;
+}
+
+.el-dialog__header {
+  padding: 18px 20px 12px;
+}
+
+.el-dialog__body {
+  padding: 12px 20px;
+}
+
+.el-dialog__footer {
+  padding: 12px 20px 18px;
+}
+
+.surface-card {
+  border: 1px solid rgba(15, 23, 42, 0.08) !important;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.035);
+}
+
+.card-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.card-title-row strong,
+.card-title-row span {
+  display: block;
+}
+
+.card-title-row strong {
+  color: #111827;
+  font-size: 15px;
+}
+
+.card-title-row span {
+  margin-top: 4px;
+  color: #98a2b3;
+  font-size: 12px;
+}
+
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.table-shell {
+  width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+}
+
+.metric-card {
+  padding: 18px;
+  border-radius: 10px;
+  background: #fff;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.035);
+}
+
+.metric-card span,
+.metric-card small {
+  display: block;
+  color: #667085;
+  font-size: 12px;
+}
+
+.metric-card strong {
+  display: block;
+  margin: 8px 0 6px;
+  color: #111827;
+  font-size: 28px;
+  line-height: 1;
+}
+
+.el-select-dropdown {
+  background-color: #fff !important;
+  border: 1px solid #dcdfe6;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+}
+
+.el-select-dropdown__item {
+  background-color: #fff;
+  color: $text-regular;
+
+  &:hover {
+    background-color: #f7f8fa;
+  }
+
+  &.selected {
+    color: $primary-color;
+    font-weight: 700;
+  }
+}
+
+@media (max-width: 1180px) {
+  .metric-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .el-main {
+    padding: 14px;
+  }
+
+  .metric-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .metric-card {
+    padding: 14px;
+  }
+
+  .metric-card strong {
+    font-size: 24px;
+  }
+
+  .surface-card .el-card__body {
+    padding: 14px;
+  }
+}

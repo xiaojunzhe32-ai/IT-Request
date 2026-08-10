@@ -1,0 +1,10 @@
+services:
+  itop-api:
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_JPA_SHOW_SQL: "false"
+      LOGGING_LEVEL_ROOT: INFO
+
+  itop-web:
+    environment:
+      NODE_ENV: production

@@ -1,0 +1,34 @@
+# Docker 相关文件
+.env
+docker-compose.override.yml
+
+# Docker volumes
+postgres_data/
+
+# Backup files
+*.sql
+*.backup
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Build outputs - 排除构建产物加速传输
+**/target/
+**/dist/
+**/node_modules/
+**/.mvn/
+**/mvnw
+**/mvnw.cmd
+
+# IDE files
+.idea/
+.vscode/
+*.iml
+
+# Git
+.git/
+.gitignore

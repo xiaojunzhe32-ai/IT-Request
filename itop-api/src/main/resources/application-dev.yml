@@ -1,0 +1,31 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/itop_dev
+    username: itop
+    password: itop123
+
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 50MB
+      max-request-size: 50MB
+
+  jpa:
+    show-sql: true
+    hibernate:
+      ddl-auto: update
+
+logging:
+  level:
+    com.itop: DEBUG
+    org.hibernate.SQL: DEBUG
+
+jwt:
+  secret: DevSecretKeyForJWTTokenGenerationMustBe256BitsOrLonger
+
+itop:
+  version: 1.0.0-DEV
+
+app:
+  upload:
+    dir: uploads
