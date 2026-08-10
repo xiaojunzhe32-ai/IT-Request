@@ -3,8 +3,8 @@
     <section class="login-shell">
       <div class="login-product">
         <div class="brand-row">
-          <div class="brand-mark">IT</div>
-          <div>
+          <BrandLogo />
+          <div class="brand-intro">
             <strong>IT Request Workflow</strong>
             <span>Request, assignment, testing and closure</span>
           </div>
@@ -89,6 +89,7 @@ import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import { Lock, Monitor, Operation, Setting, Tickets, User } from '@element-plus/icons-vue'
+import BrandLogo from '@/components/BrandLogo.vue'
 import { useUserStore } from '@/stores/user'
 import { authApi } from '@/api/auth'
 
@@ -254,8 +255,8 @@ const handleLogin = async () => {
   padding: 42px;
   color: #fff;
   background:
-    linear-gradient(180deg, rgba(217, 119, 6, 0.12), rgba(217, 119, 6, 0) 46%),
-    linear-gradient(135deg, #1c2430 0%, #273244 100%);
+    linear-gradient(180deg, rgba(80, 118, 255, 0.16), rgba(80, 118, 255, 0) 46%),
+    linear-gradient(135deg, #101626 0%, #151c38 100%);
 }
 
 .brand-row {
@@ -264,26 +265,16 @@ const handleLogin = async () => {
   gap: 14px;
 }
 
-.brand-mark {
-  display: grid;
-  place-items: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 10px;
-  background: #d97706;
-  font-weight: 800;
-}
-
-.brand-row strong,
-.brand-row span {
+.brand-intro strong,
+.brand-intro span {
   display: block;
 }
 
-.brand-row strong {
+.brand-intro strong {
   font-size: 18px;
 }
 
-.brand-row span,
+.brand-intro span,
 .role-card small {
   margin-top: 4px;
   color: rgba(255, 255, 255, 0.62);
@@ -300,7 +291,7 @@ const handleLogin = async () => {
 
 .section-kicker {
   margin: 0 0 14px;
-  color: #ffd7a8;
+  color: #bec8ff;
   font-size: 12px;
   font-weight: 800;
   text-transform: uppercase;
@@ -347,8 +338,8 @@ const handleLogin = async () => {
 
 .role-card:hover,
 .role-card.active {
-  border-color: rgba(245, 158, 11, 0.75);
-  background: rgba(217, 119, 6, 0.16);
+  border-color: rgba(122, 162, 255, 0.8);
+  background: rgba(59, 130, 246, 0.16);
 }
 
 .role-card:hover {
@@ -356,7 +347,7 @@ const handleLogin = async () => {
 }
 
 .role-card .el-icon {
-  color: #f59e0b;
+  color: #9db5ff;
   font-size: 20px;
 }
 
@@ -382,7 +373,7 @@ const handleLogin = async () => {
 
 .login-card__header p {
   margin: 0;
-  color: #d97706;
+  color: #000080;
   font-size: 12px;
   font-weight: 800;
   text-transform: uppercase;
@@ -418,8 +409,8 @@ const handleLogin = async () => {
   margin-top: 16px;
   padding: 12px 14px;
   border-radius: 10px;
-  background: #fff7ed;
-  color: #92400e;
+  background: #eef2ff;
+  color: #000080;
   font-size: 12px;
 }
 

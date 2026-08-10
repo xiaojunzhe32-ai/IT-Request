@@ -136,8 +136,8 @@ onMounted(loadTasks)
   width: 26px;
   height: 26px;
   border-radius: 999px;
-  background: #fff7ed;
-  color: #b45309;
+  background: #eef2ff;
+  color: #000080;
   font-size: 12px;
   font-weight: 800;
 }
@@ -154,7 +154,7 @@ onMounted(loadTasks)
 }
 
 .task-card:hover {
-  border-color: #f59e0b;
+  border-color: #7aa2ff;
   background: #fff;
 }
 

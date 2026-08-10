@@ -43,7 +43,7 @@ defineProps<{
   font-weight: 700;
   letter-spacing: 0;
   text-transform: uppercase;
-  color: #d97706;
+  color: #000080;
 }
 
 .page-header__title {

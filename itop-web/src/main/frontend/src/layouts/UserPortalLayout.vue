@@ -2,11 +2,7 @@
   <div class="user-portal-layout">
     <header class="portal-header">
       <div class="brand-row">
-        <div class="brand-mark">IT</div>
-        <div class="brand-copy">
-          <strong>IT Request Portal</strong>
-          <span>User request workspace</span>
-        </div>
+        <BrandLogo subtitle="User request workspace" />
       </div>
 
       <nav class="portal-nav">
@@ -46,6 +42,7 @@ import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessageBox } from 'element-plus'
 import { ArrowDown, CircleCheck, HomeFilled, Plus, Tickets, Timer } from '@element-plus/icons-vue'
+import BrandLogo from '@/components/BrandLogo.vue'
 import { useUserStore } from '@/stores/user'
 
 const router = useRouter()
@@ -97,7 +94,6 @@ const handleCommand = (command: string) => {
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.brand-row,
 .portal-nav,
 .user-pill {
   display: flex;
@@ -105,32 +101,8 @@ const handleCommand = (command: string) => {
 }
 
 .brand-row {
-  gap: 12px;
-}
-
-.brand-mark {
-  display: grid;
-  place-items: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 9px;
-  background: #d97706;
-  font-weight: 800;
-}
-
-.brand-copy strong,
-.brand-copy span {
-  display: block;
-}
-
-.brand-copy strong {
-  font-size: 14px;
-}
-
-.brand-copy span {
-  margin-top: 2px;
-  color: rgba(255, 255, 255, 0.56);
-  font-size: 11px;
+  display: flex;
+  align-items: center;
 }
 
 .portal-nav {
@@ -158,7 +130,7 @@ const handleCommand = (command: string) => {
 .nav-item:hover,
 .nav-item.router-link-active {
   color: #fff;
-  background: rgba(217, 119, 6, 0.2);
+  background: rgba(59, 130, 246, 0.18);
 }
 
 .user-pill {
@@ -178,7 +150,7 @@ const handleCommand = (command: string) => {
   width: 28px;
   height: 28px;
   border-radius: 999px;
-  background: #d97706;
+  background: #000080;
 }
 
 .portal-main {

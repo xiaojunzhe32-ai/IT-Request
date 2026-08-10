@@ -199,8 +199,8 @@ onMounted(loadDashboard)
 }
 
 .action-row:hover {
-  border-color: #f59e0b;
-  background: #fff7ed;
+  border-color: #7aa2ff;
+  background: #eef2ff;
 }
 
 @media (max-width: 1180px) {

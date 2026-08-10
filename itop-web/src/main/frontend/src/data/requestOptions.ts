@@ -24,7 +24,7 @@ export const priorityOptions: RequestPriority[] = ['Low', 'Medium', 'High', 'Cri
 export const statusColorMap: Record<RequestStatus, string> = {
   New: '#64748b',
   Assigned: '#2563eb',
-  'In Progress': '#d97706',
+  'In Progress': '#000080',
   Testing: '#7c3aed',
   Resolved: '#16a34a',
   'User Test Failed': '#dc2626',
@@ -34,7 +34,7 @@ export const statusColorMap: Record<RequestStatus, string> = {
 export const priorityColorMap: Record<RequestPriority, string> = {
   Low: '#64748b',
   Medium: '#2563eb',
-  High: '#d97706',
+  High: '#e11d48',
   Critical: '#dc2626'
 }
 

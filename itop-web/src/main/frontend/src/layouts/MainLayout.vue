@@ -2,11 +2,7 @@
   <el-container class="main-layout">
     <el-aside :width="isCollapse ? '68px' : '232px'" class="app-sidebar">
       <div class="brand-lockup" :class="{ collapsed: isCollapse }">
-        <div class="brand-mark">IT</div>
-        <div v-show="!isCollapse" class="brand-copy">
-          <strong>IT Request</strong>
-          <span>Operations Console</span>
-        </div>
+        <BrandLogo subtitle="Operations Console" :compact="isCollapse" />
       </div>
 
       <el-menu
@@ -140,6 +136,7 @@ import {
   User,
   UserFilled
 } from '@element-plus/icons-vue'
+import BrandLogo from '@/components/BrandLogo.vue'
 import { useUserStore } from '@/stores/user'
 
 const router = useRouter()
@@ -207,7 +204,6 @@ const handleCommand = (command: string) => {
   height: 70px;
   display: flex;
   align-items: center;
-  gap: 12px;
   padding: 0 16px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
@@ -215,35 +211,6 @@ const handleCommand = (command: string) => {
 .brand-lockup.collapsed {
   justify-content: center;
   padding: 0;
-}
-
-.brand-mark {
-  display: grid;
-  place-items: center;
-  width: 38px;
-  height: 38px;
-  border-radius: 10px;
-  background: #d97706;
-  color: #fff;
-  font-weight: 800;
-  font-size: 14px;
-  box-shadow: 0 10px 24px rgba(217, 119, 6, 0.25);
-}
-
-.brand-copy strong,
-.brand-copy span {
-  display: block;
-}
-
-.brand-copy strong {
-  font-size: 15px;
-  line-height: 1.2;
-}
-
-.brand-copy span {
-  margin-top: 3px;
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.58);
 }
 
 .sidebar-menu {
@@ -279,8 +246,8 @@ const handleCommand = (command: string) => {
 
 .sidebar-menu :deep(.el-menu-item.is-active) {
   color: #fff;
-  background: rgba(217, 119, 6, 0.18);
-  box-shadow: inset 3px 0 0 #f59e0b;
+  background: rgba(59, 130, 246, 0.18);
+  box-shadow: inset 3px 0 0 #7aa2ff;
 }
 
 .sidebar-menu :deep(.el-icon) {
@@ -341,9 +308,9 @@ const handleCommand = (command: string) => {
 .environment-chip {
   padding: 7px 10px;
   border-radius: 999px;
-  background: #fff7ed;
-  color: #b45309;
-  border: 1px solid #fed7aa;
+  background: #eef2ff;
+  color: #000080;
+  border: 1px solid #c7d2fe;
   font-size: 12px;
   font-weight: 800;
 }

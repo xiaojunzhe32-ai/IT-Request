@@ -570,8 +570,8 @@ onMounted(loadOrganizations)
   width: 36px;
   height: 36px;
   border-radius: 10px;
-  color: #d96f00;
-  background: #fff7ed;
+  color: #000080;
+  background: #eef2ff;
 }
 
 .attachment-dropzone strong,
@@ -612,7 +612,7 @@ onMounted(loadOrganizations)
 }
 
 .attachment-item > .el-icon {
-  color: #d96f00;
+  color: #000080;
 }
 
 .form-footer {
@@ -645,8 +645,8 @@ onMounted(loadOrganizations)
   margin-top: 14px;
   padding: 12px;
   border-radius: 10px;
-  border: 1px solid #fed7aa;
-  background: #fff7ed;
+  border: 1px solid #c7d2fe;
+  background: #eef2ff;
 }
 
 @media (max-width: 1080px) {

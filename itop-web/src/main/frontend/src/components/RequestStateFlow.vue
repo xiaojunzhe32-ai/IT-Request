@@ -69,7 +69,7 @@ const activeIndex = computed(() => requestStatuses.indexOf(props.status))
 
 .request-state-flow__step.complete .step-dot,
 .request-state-flow__step.active .step-dot {
-  background: #d97706;
+  background: #000080;
   color: #fff;
 }
 

@@ -152,7 +152,7 @@ onMounted(loadRequests)
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: #d97706;
+  background: #000080;
 }
 
 .status-row strong {

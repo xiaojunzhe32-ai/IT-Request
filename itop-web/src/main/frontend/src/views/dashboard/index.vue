@@ -123,12 +123,12 @@ onMounted(async () => {
 }
 
 .module-tile:hover {
-  border-color: #f59e0b;
+  border-color: #7aa2ff;
   background: #fff;
 }
 
 .module-tile .el-icon {
-  color: #d97706;
+  color: #000080;
   font-size: 20px;
 }
 

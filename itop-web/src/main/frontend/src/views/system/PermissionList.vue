@@ -30,7 +30,7 @@ onMounted(async () => { loading.value = true; try { permissions.value = await ro
 .permission-card { border: 1px solid rgba(15, 23, 42, 0.08); }
 .perm-list { display: grid; gap: 10px; }
 .perm-item { display: grid; gap: 5px; padding: 10px 12px; border-radius: 8px; background: #f8fafc; border: 1px solid #e5e7eb; }
-.perm-item code { color: #b45309; font-weight: 800; font-size: 12px; }
+.perm-item code { color: #000080; font-weight: 800; font-size: 12px; }
 .perm-item span { color: #667085; font-size: 12px; line-height: 1.5; }
 @media (max-width: 980px) { .permission-grid { grid-template-columns: 1fr; } }
 </style>
