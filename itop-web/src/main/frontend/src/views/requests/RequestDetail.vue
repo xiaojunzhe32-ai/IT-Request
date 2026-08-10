@@ -2,8 +2,8 @@
   <div v-loading="loading" class="detail-page">
     <PageHeader
       eyebrow="Request Detail"
-      :title="request.requestNo"
-      :description="request.title"
+      :title="request.title || 'Request Detail'"
+      :description="request.requestNo"
     >
       <template #actions>
         <el-button @click="goBack">Back</el-button>
