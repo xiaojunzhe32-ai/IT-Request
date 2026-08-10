@@ -129,6 +129,9 @@ public class RoleController {
                 "team:*",
                 "team:read",
                 "team:write",
+                "routing:*",
+                "routing:read",
+                "routing:write",
                 "audit:read",
                 "admin:*"
         )));

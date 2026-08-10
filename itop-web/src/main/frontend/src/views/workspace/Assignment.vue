@@ -24,7 +24,7 @@
         />
       </el-card>
 
-      <el-card class="surface-card" shadow="never">
+      <el-card v-if="canReadRoutingRules" class="surface-card" shadow="never">
         <template #header>
           <div class="card-title-row">
             <div>
@@ -52,12 +52,15 @@ import PageHeader from '@/components/PageHeader.vue'
 import RequestTable from '@/components/RequestTable.vue'
 import { requestApi } from '@/api/requests'
 import { routingRuleApi } from '@/api/system'
+import { useUserStore } from '@/stores/user'
 import type { WorkflowRequest } from '@/types/requests'
 import type { RoutingRule } from '@/types/system'
 
 const loading = ref(false)
 const requests = ref<WorkflowRequest[]>([])
 const routingRules = ref<RoutingRule[]>([])
+const userStore = useUserStore()
+const canReadRoutingRules = computed(() => userStore.hasPermission('routing:read'))
 const priorityRank: Record<WorkflowRequest['priority'], number> = {
   Critical: 0,
   High: 1,
@@ -80,12 +83,8 @@ const assignmentCandidates = computed(() =>
 const loadCandidates = async () => {
   loading.value = true
   try {
-    const [response, rules] = await Promise.all([
-      requestApi.list({ page: 0, size: 100 }),
-      routingRuleApi.list()
-    ])
+    const response = await requestApi.list({ page: 0, size: 100 })
     requests.value = response.content
-    routingRules.value = rules.filter((rule) => rule.enabled)
   } catch {
     ElMessage.error('Unable to load assignment candidates')
   } finally {
@@ -93,7 +92,20 @@ const loadCandidates = async () => {
   }
 }
 
-onMounted(loadCandidates)
+const loadRoutingRules = async () => {
+  if (!canReadRoutingRules.value) return
+  try {
+    const rules = await routingRuleApi.list()
+    routingRules.value = rules.filter((rule) => rule.enabled)
+  } catch {
+    ElMessage.error('Unable to load routing rules')
+  }
+}
+
+onMounted(() => {
+  loadCandidates()
+  loadRoutingRules()
+})
 </script>
 
 <style scoped lang="scss">
