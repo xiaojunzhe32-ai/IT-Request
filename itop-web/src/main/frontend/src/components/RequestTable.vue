@@ -8,6 +8,7 @@
       highlight-current-row
       @row-click="openRequest"
     >
+      <el-table-column prop="requestNo" label="Request No." width="170" sortable show-overflow-tooltip />
       <el-table-column label="Title" min-width="280" show-overflow-tooltip>
         <template #default="{ row }">
           <div class="request-title-cell">
@@ -15,7 +16,6 @@
           </div>
         </template>
       </el-table-column>
-      <el-table-column prop="requestNo" label="Request No." width="170" sortable show-overflow-tooltip />
       <el-table-column prop="type" label="Type" width="150" show-overflow-tooltip />
       <el-table-column prop="priority" label="Priority" width="110">
         <template #default="{ row }">
