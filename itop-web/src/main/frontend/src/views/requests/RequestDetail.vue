@@ -109,7 +109,7 @@
               <div>
                 <div class="comment-meta">
                   <strong>{{ comment.author }}</strong>
-                  <span>{{ comment.role }} - {{ comment.time }}</span>
+                  <span>{{ comment.role }} - {{ formatDateTime(comment.time) }}</span>
                   <el-tag v-if="comment.internal" size="small" type="warning" effect="light">Internal</el-tag>
                 </div>
                 <p>{{ comment.message }}</p>
