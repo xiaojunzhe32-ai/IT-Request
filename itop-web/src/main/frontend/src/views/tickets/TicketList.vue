@@ -65,7 +65,7 @@
         </el-table-column>
         <el-table-column prop="createdAt" label="创建时间" width="160">
           <template #default="scope">
-            {{ formatTime(scope.row.createdAt) }}
+            {{ formatDateTime(scope.row.createdAt) }}
           </template>
         </el-table-column>
         <el-table-column label="操作" width="280" fixed="right">
@@ -192,8 +192,8 @@
         </el-descriptions-item>
         <el-descriptions-item label="影响">{{ getImpactLabel(currentTicket.impact) }}</el-descriptions-item>
         <el-descriptions-item label="紧急度">{{ getUrgencyLabel(currentTicket.urgency) }}</el-descriptions-item>
-        <el-descriptions-item label="创建时间">{{ formatTime(currentTicket.createdAt) }}</el-descriptions-item>
-        <el-descriptions-item label="最后更新">{{ formatTime(currentTicket.lastUpdateDate) }}</el-descriptions-item>
+        <el-descriptions-item label="创建时间">{{ formatDateTime(currentTicket.createdAt) }}</el-descriptions-item>
+        <el-descriptions-item label="最后更新">{{ formatDateTime(currentTicket.lastUpdateDate) }}</el-descriptions-item>
         <el-descriptions-item label="描述" :span="2">
           {{ currentTicket.description || '-' }}
         </el-descriptions-item>
@@ -264,6 +264,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import request from '@/utils/request'
 import AttachmentUpload from '@/components/AttachmentUpload.vue'
+import { formatDateTime } from '@/utils/format'
 
 interface Ticket {
   id: number
@@ -388,10 +389,6 @@ const getUrgencyLabel = (urgency: string) => {
   return map[urgency] || urgency
 }
 
-const formatTime = (time: string) => {
-  if (!time) return ''
-  return new Date(time).toLocaleString('zh-CN')
-}
 
 const loadOrganizations = async () => {
   try {

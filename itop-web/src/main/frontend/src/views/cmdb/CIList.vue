@@ -56,7 +56,7 @@
         <el-table-column prop="organizationId" label="组织ID" width="80" />
         <el-table-column prop="createdAt" label="创建时间" width="160">
           <template #default="scope">
-            {{ formatTime(scope.row.createdAt) }}
+            {{ formatDateTime(scope.row.createdAt) }}
           </template>
         </el-table-column>
       </el-table>
@@ -90,7 +90,7 @@
         </el-descriptions-item>
         <el-descriptions-item label="冗余">{{ currentCI.redundancy || '-' }}</el-descriptions-item>
         <el-descriptions-item label="组织ID">{{ currentCI.organizationId }}</el-descriptions-item>
-        <el-descriptions-item label="创建时间">{{ formatTime(currentCI.createdAt) }}</el-descriptions-item>
+        <el-descriptions-item label="创建时间">{{ formatDateTime(currentCI.createdAt) }}</el-descriptions-item>
         <el-descriptions-item label="描述" :span="2">{{ currentCI.description || '-' }}</el-descriptions-item>
       </el-descriptions>
       <template #footer>
@@ -106,6 +106,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { useRouter } from 'vue-router'
 import request from '@/utils/request'
+import { formatDateTime } from '@/utils/format'
 
 interface CI {
   id: number
@@ -156,10 +157,6 @@ const getCriticityType = (criticity: string) => {
   return map[criticity] || 'info'
 }
 
-const formatTime = (time: string) => {
-  if (!time) return ''
-  return new Date(time).toLocaleString('zh-CN')
-}
 
 const loadCITypes = async () => {
   try {

@@ -35,7 +35,9 @@
           <span v-else class="muted">Unassigned</span>
         </template>
       </el-table-column>
-      <el-table-column prop="updatedAt" label="Updated" width="150" />
+      <el-table-column label="Updated" width="180">
+        <template #default="{ row }">{{ formatDateTime(row.updatedAt) }}</template>
+      </el-table-column>
       <el-table-column label="Actions" width="86" fixed="right" align="center">
         <template #default="{ row }">
           <el-dropdown trigger="click" @command="handleCommand($event, row)">
@@ -63,6 +65,7 @@ import { MoreFilled } from '@element-plus/icons-vue'
 import type { WorkflowRequest } from '@/types/requests'
 import PriorityTag from '@/components/PriorityTag.vue'
 import RequestStatusTag from '@/components/RequestStatusTag.vue'
+import { formatDateTime } from '@/utils/format'
 
 const props = withDefaults(defineProps<{
   requests: WorkflowRequest[]

@@ -46,7 +46,7 @@
         </el-table-column>
         <el-table-column prop="createdAt" label="创建时间" width="180">
           <template #default="{ row }">
-            {{ formatDate(row.createdAt) }}
+            {{ formatDateTime(row.createdAt) }}
           </template>
         </el-table-column>
         <el-table-column label="操作" width="150" fixed="right">
@@ -153,6 +153,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance } from 'element-plus'
 import request from '@/utils/request'
+import { formatDateTime } from '@/utils/format'
 
 interface Problem {
   id?: number
@@ -275,10 +276,6 @@ const getStatusLabel = (status: string) => {
   return map[status] || status
 }
 
-const formatDate = (dateStr: string) => {
-  if (!dateStr) return ''
-  return new Date(dateStr).toLocaleString('zh-CN')
-}
 
 const handleAdd = () => {
   dialogTitle.value = '新增问题'

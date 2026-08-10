@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="admin-page">
     <PageHeader
       eyebrow="Admin Console"
@@ -48,7 +48,7 @@
           <article v-for="log in recentAuditLogs" :key="log.id" class="audit-mini-item">
             <strong>{{ log.action }}</strong>
             <span>{{ log.username || 'System' }} · {{ log.entityType }} {{ log.entityId || '' }}</span>
-            <small>{{ log.createdAt }}</small>
+            <small>{{ formatDateTime(log.createdAt) }}</small>
           </article>
         </div>
       </el-card>
@@ -60,6 +60,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { useRouter } from 'vue-router'
+import { formatDateTime } from '@/utils/format'
 import { Connection, Document, Key, OfficeBuilding, Tickets, User, UserFilled } from '@element-plus/icons-vue'
 import PageHeader from '@/components/PageHeader.vue'
 import { dashboardApi } from '@/api/system'

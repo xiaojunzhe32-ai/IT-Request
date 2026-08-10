@@ -4,7 +4,9 @@
     <el-card v-loading="loading" class="surface-card" shadow="never">
       <div class="toolbar-row"><el-input v-model="entityType" placeholder="Entity type" clearable /><el-input v-model="action" placeholder="Action" clearable /><el-button @click="loadLogs">Apply Filters</el-button></div>
       <el-table :data="logs" row-key="id" highlight-current-row>
-        <el-table-column prop="createdAt" label="Time" width="180" />
+        <el-table-column label="Time" width="200">
+          <template #default="{ row }">{{ formatDateTime(row.createdAt) }}</template>
+        </el-table-column>
         <el-table-column prop="username" label="Actor" width="170" />
         <el-table-column prop="entityType" label="Area" width="130" />
         <el-table-column prop="action" label="Action" width="180"><template #default="{ row }"><el-tag size="small" effect="light">{{ row.action }}</el-tag></template></el-table-column>
@@ -18,10 +20,13 @@
 
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
+import { formatDateTime } from '@/utils/format'
 import { ElMessage } from 'element-plus'
 import PageHeader from '@/components/PageHeader.vue'
 import { auditLogApi } from '@/api/system'
 import type { AuditLog } from '@/types/system'
+
+
 const logs = ref<AuditLog[]>([])
 const loading = ref(false)
 const entityType = ref('')

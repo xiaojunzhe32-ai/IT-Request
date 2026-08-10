@@ -29,7 +29,7 @@
       <el-table-column prop="downloadCount" label="下载次数" width="100" />
       <el-table-column prop="createdAt" label="上传时间" width="160">
         <template #default="{ row }">
-          {{ formatDate(row.createdAt) }}
+          {{ formatDateTime(row.createdAt) }}
         </template>
       </el-table-column>
       <el-table-column label="操作" width="150">
@@ -46,6 +46,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import request from '@/utils/request'
+import { formatDateTime } from '@/utils/format'
 
 interface Attachment {
   id: number
@@ -159,10 +160,6 @@ const formatSize = (size: number) => {
   return (size / (1024 * 1024)).toFixed(2) + ' MB'
 }
 
-const formatDate = (dateStr: string) => {
-  if (!dateStr) return ''
-  return new Date(dateStr).toLocaleString('zh-CN')
-}
 </script>
 
 <style scoped lang="scss">

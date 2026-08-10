@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div v-loading="loading" class="detail-page">
     <PageHeader
       eyebrow="Request Detail"
@@ -65,10 +65,10 @@
               {{ request.affectedService }}
             </el-descriptions-item>
             <el-descriptions-item v-if="request.occurrenceTime" label="Occurrence Time">
-              {{ request.occurrenceTime }}
+              {{ formatDateTime(request.occurrenceTime) }}
             </el-descriptions-item>
             <el-descriptions-item v-if="request.requestedResolutionTime" label="Requested Resolution Time">
-              {{ request.requestedResolutionTime }}
+              {{ formatDateTime(request.requestedResolutionTime) }}
             </el-descriptions-item>
             <el-descriptions-item label="Requester">{{ request.requester }}</el-descriptions-item>
             <el-descriptions-item label="Organization">{{ request.requesterOrg }}</el-descriptions-item>
@@ -205,7 +205,7 @@
             <el-timeline-item
               v-for="item in request.history"
               :key="item.id"
-              :timestamp="item.time"
+              :timestamp="formatDateTime(item.time)"
               placement="top"
             >
               <strong>{{ item.action }}</strong>
@@ -248,6 +248,7 @@ import { userApi } from '@/api/system'
 import { requestStatuses, sanitizeRequestHtml } from '@/data/requestOptions'
 import type { RequestAttachment, RequestStatus, WorkflowRequest } from '@/types/requests'
 import type { SystemUser } from '@/types/system'
+import { formatDateTime } from '@/utils/format'
 
 interface AssigneeOption {
   id: number

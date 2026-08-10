@@ -60,7 +60,7 @@
         </el-table-column>
         <el-table-column prop="plannedStartDate" label="计划开始" width="180">
           <template #default="{ row }">
-            {{ formatDate(row.plannedStartDate) }}
+            {{ formatDateTime(row.plannedStartDate) }}
           </template>
         </el-table-column>
         <el-table-column label="操作" width="250" fixed="right">
@@ -235,12 +235,12 @@
         </el-table-column>
         <el-table-column prop="plannedStartDate" label="计划开始" width="160">
           <template #default="{ row }">
-            {{ formatDate(row.plannedStartDate) }}
+            {{ formatDateTime(row.plannedStartDate) }}
           </template>
         </el-table-column>
         <el-table-column prop="actualStartDate" label="实际开始" width="160">
           <template #default="{ row }">
-            {{ formatDate(row.actualStartDate) }}
+            {{ formatDateTime(row.actualStartDate) }}
           </template>
         </el-table-column>
         <el-table-column label="操作" width="200">
@@ -321,6 +321,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance } from 'element-plus'
 import request from '@/utils/request'
+import { formatDateTime } from '@/utils/format'
 
 interface ChangeRequest {
   id?: number
@@ -552,10 +553,6 @@ const getTaskStatusLabel = (status: string) => {
   return map[status] || status
 }
 
-const formatDate = (dateStr: string) => {
-  if (!dateStr) return ''
-  return new Date(dateStr).toLocaleString('zh-CN')
-}
 
 const handleAdd = () => {
   dialogTitle.value = '新增变更'
