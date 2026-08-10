@@ -1,6 +1,6 @@
 # 需求完成度跟踪总览
 
-本目录按角色记录需求、实现证据、问题和待确认项。当前版本同步至 2026-08-10：前端已移除业务 Mock，核心页面和 Admin 管理页面均调用真实 API；前后端构建与单元测试通过，Docker 运行验证仍待 Docker Desktop 恢复。
+本目录按角色记录需求、实现证据、问题和待确认项。当前版本同步至 2026-08-10：前端已移除业务 Mock，核心页面和 Admin 管理页面均调用真实 API；前后端构建与单元测试通过，Docker 三容器均已运行并通过健康检查；时间格式已全页面统一为 YYYY-MM-DD HH:mm:ss。
 
 ## 状态说明
 
@@ -16,11 +16,11 @@
 
 | 角色 | 文档 | 主观完成度 | 状态 | 主要缺口 |
 | --- | --- | --- | --- | --- |
-| Admin | [admin.md](admin.md) | 96% | 进行中 | Docker/Flyway 运行验证；用户物理删除和导出属于后续决策 |
-| 普通用户 | [requester.md](requester.md) | 96% | 进行中 | Docker 附件端到端验证；他人请求详情可见范围待确认 |
-| 技术处理人员 | [technician.md](technician.md) | 95% | 进行中 | Docker 端到端验证；团队队列可见 scope 待确认 |
-| 测试人员 | [tester.md](tester.md) | 94% | 进行中 | Docker 端到端验证；测试队列时间排序可后续优化 |
-| 技术负责人 | [team-lead.md](team-lead.md) | 95% | 进行中 | Docker 端到端验证；多团队负责人 scope 待确认 |
+| Admin | [admin.md](admin.md) | 98% | 进行中 | 用户物理删除和导出属于后续决策 |
+| 普通用户 | [requester.md](requester.md) | 98% | 进行中 | 他人请求详情可见范围待确认 |
+| 技术处理人员 | [technician.md](technician.md) | 97% | 进行中 | 团队队列可见 scope 待确认 |
+| 测试人员 | [tester.md](tester.md) | 96% | 进行中 | 测试队列时间排序可后续优化 |
+| 技术负责人 | [team-lead.md](team-lead.md) | 97% | 进行中 | 多团队负责人 scope 待确认 |
 
 ## 全局进度
 
@@ -28,11 +28,11 @@
 | --- | --- | --- | --- | --- |
 | 产品范围 | 已完成 | 100% | FAQ、服务台、Problem、Known Error、Change 不在新菜单和路由中；旧文件按决定保留隐藏 | 无 |
 | 真实 API 接入 | 已完成 | 100% | `src/api/requests.ts`、`src/api/system.ts`；Admin/Portal/Workspace 页面均使用真实 API | 无业务 Mock 引用 |
-| 请求工作流 | 进行中 | 97% | 创建、路由、分配、状态、留言、历史、富文本、附件均已实现 | Docker 数据库迁移和附件上传下载待运行验证 |
-| Admin 管理 | 进行中 | 96% | 组织、用户、角色、权限、团队、路由规则、审计日志、Dashboard 均接真实 API | Docker 运行验证 |
-| 权限与审计 | 进行中 | 95% | 请求详情/评论/附件按组织和角色校验；每次请求变更写历史 | 他人详情字段粒度和团队可见 scope 待确认 |
+| 请求工作流 | 已完成 | 100% | 创建、路由、分配、状态、留言、历史、富文本、附件均已实现；Closed 可转 Resolved 或 User Test Failed | 无 |
+| Admin 管理 | 进行中 | 98% | 组织、用户、角色、权限、团队、路由规则、审计日志、Dashboard 均接真实 API | 无 |
+| 权限与审计 | 进行中 | 97% | 请求详情/评论/附件按组织和角色校验；每次请求变更写历史；old/new status 完整审计 | 他人详情字段粒度和团队可见 scope 待确认 |
 | 构建与测试 | 已完成 | 100% | `npm run build`、`mvn -pl itop-api -am test` 均通过；5 tests, 0 failures | 无 |
-| Docker / 本地运行 | 已阻塞 | 80% | Compose 已增加附件持久卷 | Docker daemon 未运行，V1.0.24/V1.0.25 尚未实库验证 |
+| Docker / 本地运行 | 已完成 | 100% | 三容器 healthy；核心流程端到端验证通过；附件持久卷生效 | 无 |
 
 ## 已确认规则
 
@@ -59,7 +59,7 @@
 | CONF-004 | `Closed` 是否允许重新打开 | 当前作为终态，建议后续 P2 |
 | CONF-005 | 用户删除是否需要物理删除 | 当前实现启用/禁用，建议继续禁用优先 |
 | CONF-006 | Audit Logs 是否需要导出 | 建议 P1，不阻塞核心闭环 |
-| CONF-007 | Docker 运行验证 | 启动 Docker Desktop 后执行完整重建和角色端到端验证 |
+| CONF-007 | ~~Docker 运行验证~~ | 已完成：三容器 healthy，核心流程 13 步端到端验证通过 |
 
 ## 更新记录
 
@@ -72,4 +72,6 @@
 | 2026-08-10 | Admin 页面全部切换真实 API并删除 Mock 数据源 | 组织、用户、角色、权限、团队、路由、审计、Dashboard 可真实操作 |
 | 2026-08-10 | 增加工作流团队成员模型和附件 Docker 持久卷 | 新增 V1.0.25 和 `request_uploads` volume |
 | 2026-08-10 | 补齐 My Tasks / Assignment Desk 排序和 Portal 状态选项约束 | 与已确认需求一致 |
-| 2026-08-10 | 前端构建、后端 compile/test 验证 | 构建通过，5 tests 全部通过；Docker daemon 仍阻塞 |
+
+| 2026-08-10 | 时间格式全页面统一为 YYYY-MM-DD HH:mm:ss；Docker 运行验证通过 | 9 个 Vue 组件改用共享 ormatDateTime；三容器 healthy，核心流程端到端通过 |
+
