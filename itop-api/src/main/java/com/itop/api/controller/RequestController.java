@@ -61,7 +61,7 @@ public class RequestController {
         if (dto == null) {
             return ResponseEntity.ok(ApiResponse.error(404, "Request not found"));
         }
-        // 闂佽崵濮村ú顓㈠绩闁秵鍎戦柣妤€鐗忛々?闂?IT 濠电偛鐡ㄧ划宀勫箹椤愶箑绠熼柧蹇ｅ亞閳绘梻鈧箍鍎遍幊搴ｆ媼閺屻儲鍋℃繛鍡楁捣椤︼箓鏌涢悙瀛樺唉闁哄苯鐗撴俊鎼佸Ψ椤斿彨锝呪攽?
+        // Hide internal notes from requesters; IT staff see everything.
         boolean includeInternal = securityUtils.isITStaff();
         dto.setComments(requestService.getComments(id, includeInternal));
         dto.setHistory(requestService.getHistory(id));
