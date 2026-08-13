@@ -81,9 +81,6 @@ public class RequestController {
         if (dto.getDescription() == null || dto.getDescription().isBlank()) {
             return ResponseEntity.ok(ApiResponse.error(400, "Description is required"));
         }
-        if (dto.getOrganizationId() == null) {
-            return ResponseEntity.ok(ApiResponse.error(400, "Organization is required"));
-        }
         RequestDTO created = requestService.create(dto);
         auditService.logCreate("Request", created.getId(), "Created request: " + created.getTitle());
         return ResponseEntity.ok(ApiResponse.success("Request created", created));
@@ -126,7 +123,7 @@ public class RequestController {
             if (!requestService.canView(id)) {
                 return ResponseEntity.ok(ApiResponse.error(403, "Request is outside your access scope"));
             }
-            if (securityUtils.isRequester()) {
+            if (securityUtils.isRequester() && !securityUtils.isITStaff()) {
                 if (!requestService.isRequester(id)
                         || !("Closed".equals(req.getStatus()) || "Resolved".equals(req.getStatus()) || "User Test Failed".equals(req.getStatus()))) {
                     return ResponseEntity.ok(ApiResponse.error(403, "Requesters can only close or report failure on their own request"));

@@ -1,6 +1,8 @@
 import request from '@/utils/request'
 import type {
   AuditLog,
+  CodeTableCode,
+  CodeTableItem,
   DashboardStats,
   RoutingRule,
   SystemPageResponse,
@@ -9,12 +11,20 @@ import type {
   Team
 } from '@/types/system'
 
+export type CodeTableItemInput = {
+  tableCode?: CodeTableCode | string
+  code?: string
+  name?: string
+  status?: string
+  description?: string
+  sortOrder?: number
+}
+
 export const teamApi = {
   list(params?: {
     page?: number
     size?: number
     sort?: string
-    orgId?: number
     type?: string
   }): Promise<SystemPageResponse<Team>> {
     return request.get('/teams', { params })
@@ -44,7 +54,6 @@ export const userApi = {
     sort?: string
     search?: string
     status?: string
-    orgId?: number
   }): Promise<SystemPageResponse<SystemUser>> {
     return request.get('/users', { params })
   },
@@ -93,6 +102,10 @@ export const routingRuleApi = {
     return request.get('/routing-rules')
   },
 
+  suggest(params: { organizationId?: number; requestType?: string; priority?: string; affectedService?: string }): Promise<{ teamId: number; teamName: string } | null> {
+    return request.get('/routing-rules/suggest', { params })
+  },
+
   create(data: Partial<RoutingRule>): Promise<RoutingRule> {
     return request.post('/routing-rules', data)
   },
@@ -111,6 +124,26 @@ export const routingRuleApi = {
 
   delete(id: number): Promise<void> {
     return request.delete(`/routing-rules/${id}`)
+  }
+}
+
+export const codeTableApi = {
+  list(tableCode: CodeTableCode, status?: string): Promise<CodeTableItem[]> {
+    return request.get(`/code-tables/${tableCode}/items`, {
+      params: status ? { status } : undefined
+    })
+  },
+
+  create(tableCode: CodeTableCode, data: CodeTableItemInput): Promise<CodeTableItem> {
+    return request.post(`/code-tables/${tableCode}/items`, { ...data, tableCode })
+  },
+
+  update(tableCode: CodeTableCode, id: number, data: CodeTableItemInput): Promise<CodeTableItem> {
+    return request.put(`/code-tables/${tableCode}/items/${id}`, { ...data, tableCode })
+  },
+
+  delete(tableCode: CodeTableCode, id: number): Promise<void> {
+    return request.delete(`/code-tables/${tableCode}/items/${id}`)
   }
 }
 

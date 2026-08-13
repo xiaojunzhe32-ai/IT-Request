@@ -18,6 +18,7 @@ public class RoutingRuleDTO {
     private String description;
     private Long organizationId;
     private String organizationName;
+    private String affectedService;
     private String requestType;
     private String priority;
     private Long teamId;

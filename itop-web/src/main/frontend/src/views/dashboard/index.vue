@@ -3,7 +3,7 @@
     <PageHeader
       eyebrow="Admin Console"
       title="Admin Overview"
-      description="Maximum-permission technical lead console for organization, access, routing and request governance."
+      description="Maximum-permission technical lead console for access, routing and request governance."
     />
 
     <div class="metric-grid">
@@ -61,7 +61,7 @@ import { computed, onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { useRouter } from 'vue-router'
 import { formatDateTime } from '@/utils/format'
-import { Connection, Document, Key, OfficeBuilding, Tickets, User, UserFilled } from '@element-plus/icons-vue'
+import { Connection, Document, Key, Tickets, User, UserFilled } from '@element-plus/icons-vue'
 import PageHeader from '@/components/PageHeader.vue'
 import { dashboardApi } from '@/api/system'
 import type { DashboardStats } from '@/types/system'
@@ -78,7 +78,6 @@ const metrics = computed(() => [
 ])
 
 const modules = [
-  { title: 'Organizations', description: 'Visibility boundaries and departments', path: '/organizations', icon: OfficeBuilding },
   { title: 'Users', description: 'Accounts, roles and status', path: '/users', icon: User },
   { title: 'Roles', description: 'Permission bundles by role', path: '/roles', icon: Key },
   { title: 'Teams', description: 'IT ownership and members', path: '/teams', icon: UserFilled },

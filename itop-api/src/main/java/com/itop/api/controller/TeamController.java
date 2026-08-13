@@ -3,11 +3,10 @@ package com.itop.api.controller;
 import com.itop.api.dto.PageResponse;
 import com.itop.api.dto.TeamDTO;
 import com.itop.api.service.AuditService;
+import com.itop.api.service.RoleSyncService;
 import com.itop.common.dto.ApiResponse;
-import com.itop.core.entity.Organization;
 import com.itop.core.entity.Team;
 import com.itop.core.entity.User;
-import com.itop.core.repository.OrganizationRepository;
 import com.itop.core.repository.TeamRepository;
 import com.itop.core.repository.UserRepository;
 import io.swagger.v3.oas.annotations.Operation;
@@ -23,6 +22,9 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
 
 @Tag(name = "Team", description = "Team management APIs")
 @RestController
@@ -31,9 +33,9 @@ import java.util.stream.Collectors;
 public class TeamController {
 
     private final TeamRepository teamRepository;
-    private final OrganizationRepository organizationRepository;
     private final UserRepository userRepository;
     private final AuditService auditService;
+    private final RoleSyncService roleSyncService;
 
     @Operation(summary = "Get all teams", description = "Retrieve a paginated list of all teams")
     @GetMapping
@@ -77,13 +79,6 @@ public class TeamController {
     @PostMapping
     @PreAuthorize("@securityUtils.hasPermission('team:write')")
     public ResponseEntity<ApiResponse<TeamDTO>> create(@RequestBody TeamDTO dto) {
-        // Validate organization exists
-        Organization org = organizationRepository.findById(dto.getOrganizationId())
-                .orElse(null);
-        if (org == null) {
-            return ResponseEntity.ok(ApiResponse.error(400, "Organization not found"));
-        }
-
         // Check for duplicate team code
         if (dto.getTeamCode() != null && !dto.getTeamCode().isEmpty()) {
             if (teamRepository.existsByTeamCode(dto.getTeamCode())) {
@@ -93,15 +88,22 @@ public class TeamController {
 
         Team team = new Team(dto.getName(), dto.getOrganizationId());
         team.setTeamCode(dto.getTeamCode());
-        team.setTeamType(dto.getTeamType() != null ? dto.getTeamType() : "SUPPORT");
-        team.setLeaderUserId(dto.getLeaderId());
+        team.setTeamType(dto.getTeamType() != null ? dto.getTeamType() : "IT_TEAM");
         team.setMemberUsers(resolveMembers(dto.getMemberIds()));
+        team.setLeaderUsers(resolveLeaders(dto.getLeaderIds(), dto.getMemberIds()));
         team.setEmail(dto.getEmail());
         team.setPhone(dto.getPhone());
         team.setStatus(dto.getStatus() != null ? dto.getStatus() : "ACTIVE");
 
         team = teamRepository.save(team);
         auditService.logCreate("Team", team.getId(), "Created team: " + team.getName());
+
+        // Sync roles for all members and leaders
+        Set<Long> affectedUserIds = new HashSet<>();
+        if (dto.getMemberIds() != null) affectedUserIds.addAll(dto.getMemberIds());
+        if (dto.getLeaderIds() != null) affectedUserIds.addAll(dto.getLeaderIds());
+        roleSyncService.syncUsersRoles(affectedUserIds);
+
         return ResponseEntity.ok(ApiResponse.success("Team created", toDTO(team)));
     }
 
@@ -113,6 +115,11 @@ public class TeamController {
             @RequestBody TeamDTO dto) {
         return teamRepository.findById(id)
                 .map(team -> {
+                    // Collect old member/leader IDs before update (for role re-sync of removed users)
+                    Set<Long> affectedUserIds = new HashSet<>();
+                    team.getMemberUsers().forEach(u -> affectedUserIds.add(u.getId()));
+                    team.getLeaderUsers().forEach(u -> affectedUserIds.add(u.getId()));
+
                     if (dto.getTeamCode() != null) {
                         // Check for duplicate team code
                         if (!dto.getTeamCode().equals(team.getTeamCode()) &&
@@ -127,8 +134,14 @@ public class TeamController {
                     if (dto.getTeamType() != null) {
                         team.setTeamType(dto.getTeamType());
                     }
-                    team.setLeaderUserId(dto.getLeaderId());
-                    if (dto.getMemberIds() != null) team.setMemberUsers(resolveMembers(dto.getMemberIds()));
+                    if (dto.getMemberIds() != null) {
+                        team.setMemberUsers(resolveMembers(dto.getMemberIds()));
+                        affectedUserIds.addAll(dto.getMemberIds());
+                    }
+                    if (dto.getLeaderIds() != null) {
+                        team.setLeaderUsers(resolveLeaders(dto.getLeaderIds(), dto.getMemberIds()));
+                        affectedUserIds.addAll(dto.getLeaderIds());
+                    }
                     if (dto.getEmail() != null) {
                         team.setEmail(dto.getEmail());
                     }
@@ -141,6 +154,10 @@ public class TeamController {
 
                     Team saved = teamRepository.save(team);
                     auditService.logUpdate("Team", saved.getId(), "attributes", null, null, "Updated team: " + saved.getName());
+
+                    // Sync roles for all affected users (old + new members/leaders)
+                    roleSyncService.syncUsersRoles(affectedUserIds);
+
                     return ResponseEntity.ok(ApiResponse.success("Team updated", toDTO(saved)));
                 })
                 .orElse(ResponseEntity.ok(ApiResponse.error(404, "Team not found")));
@@ -155,11 +172,21 @@ public class TeamController {
     @DeleteMapping("/{id}")
     @PreAuthorize("@securityUtils.hasPermission('team:write')")
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable("id") Long id) {
-        if (!teamRepository.existsById(id)) {
+        Team team = teamRepository.findById(id).orElse(null);
+        if (team == null) {
             return ResponseEntity.ok(ApiResponse.error(404, "Team not found"));
         }
+        // Collect member/leader IDs before deletion for role re-sync
+        Set<Long> affectedUserIds = new HashSet<>();
+        team.getMemberUsers().forEach(u -> affectedUserIds.add(u.getId()));
+        team.getLeaderUsers().forEach(u -> affectedUserIds.add(u.getId()));
+
         auditService.logDelete("Team", id, "Deleted team");
         teamRepository.deleteById(id);
+
+        // Re-sync roles for users who lost this team membership
+        roleSyncService.syncUsersRoles(affectedUserIds);
+
         return ResponseEntity.ok(ApiResponse.success("Team deleted", null));
     }
 
@@ -175,6 +202,8 @@ public class TeamController {
     }
 
     private TeamDTO toDTO(Team team) {
+        List<Long> leaderIds = team.getLeaderUsers().stream().map(User::getId).collect(Collectors.toList());
+        List<String> leaderNames = team.getLeaderUsers().stream().map(this::displayName).collect(Collectors.toList());
         return TeamDTO.builder()
                 .id(team.getId())
                 .name(team.getName())
@@ -182,8 +211,10 @@ public class TeamController {
                 .organizationName(team.getOrganization() != null ? team.getOrganization().getName() : null)
                 .teamCode(team.getTeamCode())
                 .teamType(team.getTeamType())
-                .leaderId(team.getLeaderUserId())
-                .leaderName(team.getLeaderUser() != null ? displayName(team.getLeaderUser()) : null)
+                .leaderId(leaderIds.isEmpty() ? null : leaderIds.get(0))
+                .leaderName(leaderNames.isEmpty() ? null : leaderNames.get(0))
+                .leaderIds(leaderIds)
+                .leaderNames(leaderNames)
                 .memberIds(team.getMemberUsers().stream().map(User::getId).collect(Collectors.toList()))
                 .memberNames(team.getMemberUsers().stream().map(this::displayName).collect(Collectors.toList()))
                 .email(team.getEmail())
@@ -195,12 +226,30 @@ public class TeamController {
     }
 
     private List<User> resolveMembers(List<Long> memberIds) {
-        if (memberIds == null || memberIds.isEmpty()) return new java.util.ArrayList<>();
+        if (memberIds == null || memberIds.isEmpty()) return new ArrayList<>();
         List<User> members = userRepository.findAllById(memberIds);
         if (members.size() != memberIds.stream().distinct().count()) {
             throw new IllegalArgumentException("One or more team members do not exist");
         }
-        return new java.util.ArrayList<>(members);
+        return new ArrayList<>(members);
+    }
+
+    /**
+     * 解析 Leader ID 列表为 User 实体列表，并校验 Leader 必须是 Members 的子集。
+     */
+    private List<User> resolveLeaders(List<Long> leaderIds, List<Long> memberIds) {
+        if (leaderIds == null || leaderIds.isEmpty()) return new ArrayList<>();
+        List<Long> effectiveMembers = memberIds != null ? memberIds : new ArrayList<>();
+        for (Long leaderId : leaderIds) {
+            if (!effectiveMembers.contains(leaderId)) {
+                throw new IllegalArgumentException("Leader must be a team member (user id=" + leaderId + ")");
+            }
+        }
+        List<User> leaders = userRepository.findAllById(leaderIds);
+        if (leaders.size() != leaderIds.stream().distinct().count()) {
+            throw new IllegalArgumentException("One or more team leaders do not exist");
+        }
+        return new ArrayList<>(leaders);
     }
 
     private String displayName(User user) {

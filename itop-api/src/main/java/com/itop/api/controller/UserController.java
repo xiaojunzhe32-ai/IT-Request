@@ -1,7 +1,5 @@
 package com.itop.api.controller;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.itop.api.dto.PageResponse;
 import com.itop.api.dto.UserDTO;
 import com.itop.api.security.SecurityUtils;
@@ -33,7 +31,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -51,7 +48,6 @@ public class UserController {
     private final TeamRepository teamRepository;
     private final PasswordEncoder passwordEncoder;
     private final SecurityUtils securityUtils;
-    private final ObjectMapper objectMapper;
 
     @Operation(summary = "Get all users", description = "Retrieve a paginated list of users with optional filtering")
     @GetMapping
@@ -64,17 +60,9 @@ public class UserController {
             @RequestParam(name = "status", required = false) String status,
             @RequestParam(name = "orgId", required = false) Long orgId) {
 
-        Set<Long> accessibleOrgIds = securityUtils.getAccessibleOrgIds();
-        if (orgId != null && accessibleOrgIds != null && !accessibleOrgIds.contains(orgId)) {
-            return ResponseEntity.ok(ApiResponse.error(403, "Organization is outside your access scope"));
-        }
-
         Pageable pageable = PageRequest.of(page, size, Sort.by(sort));
         Specification<User> spec = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
-            if (accessibleOrgIds != null) {
-                predicates.add(root.get("organizationId").in(accessibleOrgIds));
-            }
             if (search != null && !search.isBlank()) {
                 String like = "%" + search.trim().toLowerCase() + "%";
                 predicates.add(cb.or(
@@ -86,9 +74,6 @@ public class UserController {
             }
             if (status != null && !status.isBlank()) {
                 predicates.add(cb.equal(root.get("status"), status));
-            }
-            if (orgId != null) {
-                predicates.add(cb.equal(root.get("organizationId"), orgId));
             }
             return cb.and(predicates.toArray(new Predicate[0]));
         };
@@ -128,13 +113,6 @@ public class UserController {
             return ResponseEntity.ok(ApiResponse.error(400, organizationError));
         }
 
-        List<Role> roles;
-        try {
-            roles = resolveAssignableRoles(dto.getRoleIds());
-        } catch (IllegalArgumentException ex) {
-            return ResponseEntity.ok(ApiResponse.error(400, ex.getMessage()));
-        }
-
         User.AuthMethod authMethod;
         try {
             authMethod = parseAuthMethod(dto.getAuthMethod());
@@ -146,7 +124,19 @@ public class UserController {
         }
 
         User user = new User(dto.getUsername(), dto.getEmail());
-        applyEditableFields(user, dto, roles, authMethod);
+        applyEditableFields(user, dto, authMethod);
+        // Assign ADMIN role if admin flag is set (admin-only)
+        if (Boolean.TRUE.equals(dto.getAdmin())) {
+            if (!securityUtils.isAdmin()) {
+                return ResponseEntity.ok(ApiResponse.error(403, "Only admins can grant admin access"));
+            }
+            Role adminRole = roleRepository.findByRoleCode("ADMIN").orElse(null);
+            if (adminRole != null) {
+                List<Role> roles = new ArrayList<>(user.getRoles());
+                roles.add(adminRole);
+                user.setRoles(roles);
+            }
+        }
         String password = authMethod == User.AuthMethod.LOCAL ? dto.getPassword() : UUID.randomUUID().toString();
         user.setPassword(passwordEncoder.encode(password));
 
@@ -176,13 +166,6 @@ public class UserController {
             return ResponseEntity.ok(ApiResponse.error(400, organizationError));
         }
 
-        List<Role> roles;
-        try {
-            roles = resolveAssignableRoles(dto.getRoleIds());
-        } catch (IllegalArgumentException ex) {
-            return ResponseEntity.ok(ApiResponse.error(400, ex.getMessage()));
-        }
-
         User.AuthMethod authMethod;
         try {
             authMethod = parseAuthMethod(dto.getAuthMethod());
@@ -190,7 +173,24 @@ public class UserController {
             return ResponseEntity.ok(ApiResponse.error(400, ex.getMessage()));
         }
 
-        applyEditableFields(existing, dto, roles, authMethod);
+        applyEditableFields(existing, dto, authMethod);
+        // Toggle ADMIN role based on admin flag; preserve other roles (managed by team sync)
+        if (dto.getAdmin() != null) {
+            if (!securityUtils.isAdmin()) {
+                return ResponseEntity.ok(ApiResponse.error(403, "Only admins can grant or revoke admin access"));
+            }
+            Role adminRole = roleRepository.findByRoleCode("ADMIN").orElse(null);
+            if (adminRole != null) {
+                List<Role> currentRoles = new ArrayList<>(existing.getRoles());
+                boolean hasAdmin = currentRoles.stream().anyMatch(r -> "ADMIN".equals(r.getRoleCode()));
+                if (dto.getAdmin() && !hasAdmin) {
+                    currentRoles.add(adminRole);
+                } else if (!dto.getAdmin() && hasAdmin) {
+                    currentRoles.removeIf(r -> "ADMIN".equals(r.getRoleCode()));
+                }
+                existing.setRoles(currentRoles);
+            }
+        }
         User saved = userRepository.save(existing);
         return ResponseEntity.ok(ApiResponse.success("User updated", toDTO(saved)));
     }
@@ -298,13 +298,16 @@ public class UserController {
         if (user.getRoles() != null && !user.getRoles().isEmpty()) {
             builder.roleIds(user.getRoles().stream().map(Role::getId).collect(Collectors.toList()));
             builder.roleCodes(user.getRoles().stream().map(Role::getRoleCode).collect(Collectors.toList()));
+            builder.admin(user.getRoles().stream().anyMatch(r -> "ADMIN".equals(r.getRoleCode())));
+        } else {
+            builder.admin(false);
         }
         builder.teamNames(teamRepository.findDistinctByMemberUsersIdOrLeaderUserId(user.getId(), user.getId())
                 .stream().map(com.itop.core.entity.Team::getName).collect(Collectors.toList()));
         return builder.build();
     }
 
-    private void applyEditableFields(User user, UserDTO dto, List<Role> roles, User.AuthMethod authMethod) {
+    private void applyEditableFields(User user, UserDTO dto, User.AuthMethod authMethod) {
         user.setEmail(dto.getEmail());
         user.setFirstName(dto.getFirstName());
         user.setLastName(dto.getLastName());
@@ -312,9 +315,13 @@ public class UserController {
         user.setLanguage(dto.getLanguage() != null ? dto.getLanguage() : "zh_CN");
         user.setStatus(dto.getStatus() != null ? dto.getStatus() : "active");
         user.setAuthMethod(authMethod);
-        Organization organization = organizationRepository.findById(dto.getOrganizationId()).orElseThrow();
-        user.setOrganization(organization);
-        user.setRoles(roles);
+        if (dto.getOrganizationId() != null) {
+            Organization organization = organizationRepository.findById(dto.getOrganizationId()).orElseThrow();
+            user.setOrganization(organization);
+        } else {
+            user.setOrganization(null);
+        }
+        // Roles are NOT set here — they're managed by team sync + admin toggle
     }
 
     private User.AuthMethod parseAuthMethod(String value) {
@@ -327,7 +334,7 @@ public class UserController {
 
     private String validateOrganization(Long organizationId) {
         if (organizationId == null) {
-            return "Organization is required";
+            return null;
         }
         if (!organizationRepository.existsById(organizationId)) {
             return "Organization not found";
@@ -339,41 +346,8 @@ public class UserController {
         return null;
     }
 
-    private List<Role> resolveAssignableRoles(List<Long> roleIds) {
-        if (roleIds == null || roleIds.isEmpty()) {
-            throw new IllegalArgumentException("At least one role is required");
-        }
-        Set<Long> distinctIds = new LinkedHashSet<>(roleIds);
-        List<Role> roles = roleRepository.findAllById(distinctIds);
-        if (roles.size() != distinctIds.size()) {
-            throw new IllegalArgumentException("One or more roles do not exist");
-        }
-        if (!securityUtils.isAdmin()) {
-            for (Role role : roles) {
-                if ("ADMIN".equals(role.getRoleCode()) || !canGrantPermissions(role)) {
-                    throw new IllegalArgumentException("You cannot assign role " + role.getRoleCode());
-                }
-            }
-        }
-        return roles;
-    }
-
-    private boolean canGrantPermissions(Role role) {
-        if (role.getPermissions() == null || role.getPermissions().isBlank()) {
-            return true;
-        }
-        try {
-            List<String> permissions = objectMapper.readValue(role.getPermissions(), new TypeReference<List<String>>() {});
-            return permissions.stream().noneMatch("*"::equals) && permissions.stream().allMatch(securityUtils::hasPermission);
-        } catch (Exception ex) {
-            return false;
-        }
-    }
-
     private boolean canAccess(User user) {
-        Set<Long> accessibleOrgIds = securityUtils.getAccessibleOrgIds();
-        return accessibleOrgIds == null
-                || (user.getOrganizationId() != null && accessibleOrgIds.contains(user.getOrganizationId()));
+        return true;
     }
 
     @Data

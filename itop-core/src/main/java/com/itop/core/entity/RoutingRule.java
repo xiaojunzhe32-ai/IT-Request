@@ -27,6 +27,10 @@ public class RoutingRule extends BaseEntity {
     @JoinColumn(name = "org_id", insertable = false, updatable = false)
     private Organization organization;
 
+    /** 受影响服务，如 "REPORT-AAID"；null 表示不限服务 */
+    @Column(name = "affected_service", length = 100)
+    private String affectedService;
+
     /** 请求类型，如 "Application Issue"、"Network Issue"；null 表示不限类型 */
     @Column(name = "request_type", length = 100)
     private String requestType;

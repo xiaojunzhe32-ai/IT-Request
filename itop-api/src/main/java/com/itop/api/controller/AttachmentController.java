@@ -3,6 +3,7 @@ package com.itop.api.controller;
 import com.itop.api.dto.AttachmentDTO;
 import com.itop.api.security.SecurityUtils;
 import com.itop.api.service.RequestService;
+import com.itop.api.util.FileValidationUtil;
 import com.itop.common.dto.ApiResponse;
 import com.itop.core.entity.Attachment;
 import com.itop.core.entity.RequestComment;
@@ -44,6 +45,7 @@ public class AttachmentController {
     private final RequestCommentRepository commentRepository;
     private final RequestService requestService;
     private final SecurityUtils securityUtils;
+    private final FileValidationUtil fileValidationUtil;
 
     @Value("${app.upload.dir:uploads}")
     private String uploadDir;
@@ -59,6 +61,11 @@ public class AttachmentController {
 
         if (file.isEmpty()) {
             return ResponseEntity.badRequest().body(ApiResponse.error(400, "File is empty"));
+        }
+        try {
+            fileValidationUtil.validate(file);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(400, e.getMessage()));
         }
         AttachmentTarget target = authorizeEntity(entityType, entityId, true);
         if (target == null) {

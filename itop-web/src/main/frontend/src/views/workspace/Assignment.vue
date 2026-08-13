@@ -3,7 +3,7 @@
     <PageHeader
       eyebrow="IT Workspace"
       title="Assignment Desk"
-      description="Technical leads and admins assign new requests to teams and technicians."
+      description="ITMD handles all requests by default. Routing rules are optional overrides."
     />
 
     <div class="assignment-layout">
@@ -29,15 +29,14 @@
           <div class="card-title-row">
             <div>
               <strong>Routing Rules</strong>
-              <span>Suggested assignment defaults</span>
+              <span>Optional overrides, default target is ITMD</span>
             </div>
           </div>
         </template>
         <div class="rule-list">
           <article v-for="rule in routingRules" :key="rule.id" class="rule-item">
             <strong>{{ rule.name }}</strong>
-            <span>{{ rule.requestType || 'Any request type' }} · {{ rule.teamName || 'No team' }}</span>
-            <small>{{ rule.organizationName || 'Any organization' }}</small>
+            <span>{{ requestTypeLabel(rule.requestType) }} · {{ rule.teamName || 'No team' }}</span>
           </article>
         </div>
       </el-card>
@@ -52,6 +51,7 @@ import PageHeader from '@/components/PageHeader.vue'
 import RequestTable from '@/components/RequestTable.vue'
 import { requestApi } from '@/api/requests'
 import { routingRuleApi } from '@/api/system'
+import { useCodeTableStore } from '@/stores/codeTables'
 import { useUserStore } from '@/stores/user'
 import type { WorkflowRequest } from '@/types/requests'
 import type { RoutingRule } from '@/types/system'
@@ -60,7 +60,11 @@ const loading = ref(false)
 const requests = ref<WorkflowRequest[]>([])
 const routingRules = ref<RoutingRule[]>([])
 const userStore = useUserStore()
+const codeTableStore = useCodeTableStore()
 const canReadRoutingRules = computed(() => userStore.hasPermission('routing:read'))
+const requestTypeLabel = (value?: string) =>
+  value ? codeTableStore.labelFor('REQUEST_TYPE', value, value) : 'Any request type'
+
 const priorityRank: Record<WorkflowRequest['priority'], number> = {
   Critical: 0,
   High: 1,
@@ -103,6 +107,7 @@ const loadRoutingRules = async () => {
 }
 
 onMounted(() => {
+  codeTableStore.loadTable('REQUEST_TYPE').catch(() => undefined)
   loadCandidates()
   loadRoutingRules()
 })

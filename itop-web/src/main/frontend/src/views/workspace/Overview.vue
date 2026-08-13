@@ -123,6 +123,7 @@ onMounted(loadRequests)
 .workspace-page {
   display: grid;
   gap: 16px;
+  width: 100%;
 }
 
 .overview-grid {

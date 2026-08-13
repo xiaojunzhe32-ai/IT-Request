@@ -76,12 +76,6 @@ const routes: RouteRecordRaw[] = [
         meta: { title: 'My Tasks', icon: 'Operation', permission: 'request:read' }
       },
       {
-        path: 'workspace/test-queue',
-        name: 'TestQueue',
-        component: () => import('@/views/workspace/TestQueue.vue'),
-        meta: { title: 'Test Queue', icon: 'Monitor', permission: 'request:read' }
-      },
-      {
         path: 'workspace/assignment',
         name: 'AssignmentDesk',
         component: () => import('@/views/workspace/Assignment.vue'),
@@ -100,28 +94,10 @@ const routes: RouteRecordRaw[] = [
         meta: { title: 'Dashboard', icon: 'Odometer', adminOnly: true }
       },
       {
-        path: 'organizations',
-        name: 'Organizations',
-        component: () => import('@/views/cmdb/OrganizationList.vue'),
-        meta: { title: 'Organizations', icon: 'OfficeBuilding', adminOnly: true }
-      },
-      {
         path: 'users',
         name: 'Users',
         component: () => import('@/views/system/UserList.vue'),
         meta: { title: 'Users', icon: 'User', adminOnly: true }
-      },
-      {
-        path: 'roles',
-        name: 'Roles',
-        component: () => import('@/views/system/RoleList.vue'),
-        meta: { title: 'Roles', icon: 'Key', adminOnly: true }
-      },
-      {
-        path: 'permissions',
-        name: 'Permissions',
-        component: () => import('@/views/system/PermissionList.vue'),
-        meta: { title: 'Permissions', icon: 'Lock', adminOnly: true }
       },
       {
         path: 'teams',
@@ -130,7 +106,25 @@ const routes: RouteRecordRaw[] = [
         meta: { title: 'Teams', icon: 'UserFilled', adminOnly: true }
       },
       {
-        path: 'routing-rules',
+        path: 'code-tables',
+        name: 'CodeTables',
+        component: () => import('@/views/system/CodeTableList.vue'),
+        meta: { title: 'Code Tables', icon: 'Collection', adminOnly: true }
+      },
+      {
+        path: 'code-tables/roles',
+        name: 'Roles',
+        component: () => import('@/views/system/RoleList.vue'),
+        meta: { title: 'Roles', icon: 'Key', adminOnly: true }
+      },
+      {
+        path: 'code-tables/permissions',
+        name: 'Permissions',
+        component: () => import('@/views/system/PermissionList.vue'),
+        meta: { title: 'Permissions', icon: 'Lock', adminOnly: true }
+      },
+      {
+        path: 'code-tables/routing-rules',
         name: 'RoutingRules',
         component: () => import('@/views/system/RoutingRules.vue'),
         meta: { title: 'Routing Rules', icon: 'Connection', adminOnly: true }

@@ -1,6 +1,6 @@
 # 需求完成度跟踪总览
 
-本目录按角色记录需求、实现证据、问题和待确认项。当前版本同步至 2026-08-10：前端已移除业务 Mock，核心页面和 Admin 管理页面均调用真实 API；前后端构建与单元测试通过，Docker 三容器均已运行并通过健康检查；时间格式已全页面统一为 YYYY-MM-DD HH:mm:ss。
+本目录按角色记录需求、实现证据、问题和待确认项。当前版本同步至 2026-08-11：前端已移除业务 Mock，核心页面和 Admin 管理页面均调用真实 API；Admin Code Tables 已接入 Request Type 和 Affected Service / System；前后端构建通过，Docker 三容器历史验证已通过；时间格式已全页面统一为 YYYY-MM-DD HH:mm:ss。
 
 ## 状态说明
 
@@ -29,8 +29,8 @@
 | 产品范围 | 已完成 | 100% | FAQ、服务台、Problem、Known Error、Change 不在新菜单和路由中；旧文件按决定保留隐藏 | 无 |
 | 真实 API 接入 | 已完成 | 100% | `src/api/requests.ts`、`src/api/system.ts`；Admin/Portal/Workspace 页面均使用真实 API | 无业务 Mock 引用 |
 | 请求工作流 | 已完成 | 100% | 创建、路由、分配、状态、留言、历史、富文本、附件均已实现；Closed 可转 Resolved 或 User Test Failed | 无 |
-| Admin 管理 | 进行中 | 98% | 组织、用户、角色、权限、团队、路由规则、审计日志、Dashboard 均接真实 API | 无 |
-| 权限与审计 | 进行中 | 97% | 请求详情/评论/附件按组织和角色校验；每次请求变更写历史；old/new status 完整审计 | 他人详情字段粒度和团队可见 scope 待确认 |
+| Admin 管理 | 进行中 | 99% | 用户、角色、权限、团队、路由规则、Code Tables、审计日志、Dashboard 均接真实 API；组织管理已废除 | Code Tables Docker Flyway 回归 |
+| 权限与审计 | 进行中 | 97% | 请求详情/评论/附件按角色校验；每次请求变更写历史；old/new status 完整审计 | 他人详情字段粒度和团队可见 scope 待确认 |
 | 构建与测试 | 已完成 | 100% | `npm run build`、`mvn -pl itop-api -am test` 均通过；5 tests, 0 failures | 无 |
 | Docker / 本地运行 | 已完成 | 100% | 三容器 healthy；核心流程端到端验证通过；附件持久卷生效 | 无 |
 
@@ -44,7 +44,8 @@
 | 普通用户状态 | 只有请求处于 `Resolved` 时才可选择 `Closed` 或 `User Test Failed` |
 | User Test Failed | 失败原因可选，可通过留言添加附件 |
 | 内部测试 | 通过改为 `Resolved`；失败改回 `In Progress`；不新增 `Test Failed` 状态；只写一条状态历史 |
-| 转派 | IT 人员之间允许跨团队转派，人员选项显示团队或组织 |
+| 转派 | IT 人员之间允许跨团队转派，人员选项显示团队 |
+| 组织 | 组织管理废除；当前以团队作为唯一分组对象 |
 | Team Lead / Tester | 权限拆分，不默认互相包含 |
 | 留言与附件 | 请求附件、留言附件和粘贴图片均走真实上传接口 |
 | 排序 | My Tasks 按优先级优先；Assignment Desk 未分配置顶，其次按优先级 |
@@ -53,7 +54,7 @@
 
 | 编号 | 待确认问题 | 当前实现 / 建议 |
 | --- | --- | --- |
-| CONF-001 | 普通用户查看他人请求时，可查看哪些详情和公开留言 | 当前按组织范围控制详情访问；上线前确认字段粒度 |
+| CONF-001 | 普通用户查看他人请求时，可查看哪些详情和公开留言 | 组织范围已废除；上线前确认字段粒度 |
 | CONF-002 | Team Queue 是全 IT 可见还是仅团队范围可见 | 当前 IT 权限较开放；上线前确认 scope |
 | CONF-003 | Team Lead 是否可负责多个团队 | 数据模型支持继续扩展，当前未定义业务规则 |
 | CONF-004 | `Closed` 是否允许重新打开 | 当前作为终态，建议后续 P2 |
@@ -72,6 +73,7 @@
 | 2026-08-10 | Admin 页面全部切换真实 API并删除 Mock 数据源 | 组织、用户、角色、权限、团队、路由、审计、Dashboard 可真实操作 |
 | 2026-08-10 | 增加工作流团队成员模型和附件 Docker 持久卷 | 新增 V1.0.25 和 `request_uploads` volume |
 | 2026-08-10 | 补齐 My Tasks / Assignment Desk 排序和 Portal 状态选项约束 | 与已确认需求一致 |
+| 2026-08-11 | 增加 Admin Code Tables，维护 Request Types 和 Affected Services / Systems | 新请求、路由规则、请求列表和详情均读取真实 code table API；前端 build 和后端 compile 通过 |
+| 2026-08-11 | 废除组织管理，移除主应用所有 Organization 页面、字段和前端 API/types | Admin/Portal/Workspace/System 主流程不再出现 organization；User/Team/Request 后端写入不再要求组织；新增 V1.0.29 放开 team.org_id |
 
 | 2026-08-10 | 时间格式全页面统一为 YYYY-MM-DD HH:mm:ss；Docker 运行验证通过 | 9 个 Vue 组件改用共享 ormatDateTime；三容器 healthy，核心流程端到端通过 |
-

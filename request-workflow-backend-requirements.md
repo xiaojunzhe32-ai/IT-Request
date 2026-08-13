@@ -8,7 +8,7 @@
 | Requirement type | PRD-standard + backend handoff appendix |
 | Current status | Confirmed draft for backend and frontend alignment |
 | Related modules | Portal, IT Workspace, Admin Console, Request Workflow, Permission, Audit |
-| Updated at | 2026-08-09 |
+| Updated at | 2026-08-11 |
 
 This phase only builds an iTop-style IT request workflow: users submit requests, IT assigns and handles them, internal testers verify fixes, users confirm closure or report `User Test Failed`, and every change is logged.
 
@@ -28,7 +28,8 @@ The system should keep the iTop-like operational style, but the business process
 - Allow technicians to submit fixed requests to the test queue.
 - Allow testers to pass requests to `Resolved` or return them to `In Progress`.
 - Allow requesters to close resolved requests or mark them as `User Test Failed`.
-- Allow Admin to manage organizations, users, roles, teams, routing rules and all request assignment.
+- Allow Admin to manage users, roles, teams, code tables, routing rules and all request assignment.
+- Keep `ITMD` as the default target team for every request unless an enabled routing rule overrides it.
 - Record a request history entry for every creation, assignment, status change, comment, attachment and important field change.
 - Keep all user-facing system pages and labels in English.
 
@@ -55,7 +56,7 @@ The following features are out of scope for this phase:
 | `Technician` | IT handling person | IT Workspace | Handle assigned/team requests, add work notes, transfer to other technicians, submit to testing |
 | `Tester` | IT internal tester | IT Workspace | Verify technician fixes, pass to resolved, or return to in progress |
 | `Team Lead` | IT technical owner | IT Workspace | Own team queue, assign/reassign work, update workflow status, monitor workload |
-| `Admin` | System owner and super team lead | Admin Console + IT Workspace | Manage organizations, users, roles, teams, routing rules, audit logs and all requests |
+| `Admin` | System owner and super team lead | Admin Console + IT Workspace | Manage users, roles, teams, routing rules, audit logs and all requests |
 
 ### 2.2 Admin Positioning
 
@@ -63,10 +64,10 @@ Admin is not a required workflow step. Admin has the highest permission and can 
 
 Admin keeps only these functional areas:
 
-- Organization Management
 - User Management
 - Role And Permission Management
 - Team Management
+- Code Table Management for Request Type and Affected Service / System
 - Request Type And Routing Rules
 - Global Request Assignment And Reassignment
 - Audit Logs
@@ -94,7 +95,9 @@ flowchart LR
 ### 3.2 Workflow Rules
 
 - A new request starts as `New`.
-- The system may auto route the request to a team based on request type. If a technician is assigned immediately, the status becomes `Assigned`.
+- The system routes new requests to `ITMD` by default.
+- Optional routing rules may override the default target team when explicitly enabled.
+- If a technician is assigned immediately, the status becomes `Assigned`.
 - Team Lead or Admin assigns `New` requests to technicians.
 - Technician starts work by moving `Assigned` to `In Progress`.
 - Technician submits completed work to `Testing`.
@@ -166,7 +169,6 @@ flowchart LR
 | Change workflow status by dropdown | No | Yes | Yes | Yes | Yes |
 | Move to `User Test Failed` | Yes, only own request | No | No | No | Yes |
 | Move to `Closed` | Yes, only own request | No | No | Optional | Yes |
-| Manage organizations | No | No | No | No | Yes |
 | Manage users and roles | No | No | No | No | Yes |
 | Manage teams and routing | No | No | No | Optional team scope | Yes |
 
@@ -216,12 +218,12 @@ Admin Console is for Admin.
 
 Required pages:
 
-- `Organizations`
 - `Users`
 - `Roles`
 - `Permissions`
 - `Teams`
 - `Routing Rules`
+- `Code Tables`
 - `Requests`
 - `Audit Logs`
 
@@ -243,7 +245,6 @@ Required product fields:
 | Priority | Business priority |
 | Status | One of the confirmed statuses |
 | Requester | User who created the request |
-| Requester Organization | Organization of the requester at creation time |
 | Occurrence Time | When the issue first happened, used for log lookup and triage |
 | Requested Resolution Time | User-requested target time for resolution; different from backend SLA due time |
 | Assigned Team | IT team responsible for the request |
@@ -257,25 +258,29 @@ Required product fields:
 
 ### 7.2 Request Type
 
-Request Type controls classification and default routing.
+Request Type controls classification. Default routing stays on `ITMD`, and routing rules are optional overrides.
+
+Request Type is maintained through the generic Code Tables module with `table_code = REQUEST_TYPE`. The request stores the selected stable `code`, while frontend pages display the configured `name`.
 
 Examples:
 
-- `Account Access`
-- `Application Issue`
-- `Network Issue`
-- `Hardware Issue`
-- `Data Correction`
-- `Other`
+- `ACCOUNT_ACCESS` / `Account Access`
+- `APPLICATION_ISSUE` / `Application Issue`
+- `NETWORK_ISSUE` / `Network Issue`
+- `HARDWARE_ISSUE` / `Hardware Issue`
+- `DATA_CORRECTION` / `Data Correction`
+- `OTHER` / `Other`
+
+Affected Service / System is maintained through the same Code Tables module with `table_code = AFFECTED_SERVICE`.
 
 ### 7.3 Routing Rule
 
-Routing Rule maps Request Type to a default IT team.
+Routing Rule maps Request Type and/or Priority to an optional override team.
 
 Rules:
 
 - If a matching enabled rule exists, a new request is assigned to that team.
-- If no matching rule exists, the request remains `New` with no assigned team.
+- If no matching rule exists, the request is assigned to the default `ITMD` team.
 - Routing rule does not have to assign a technician.
 - Admin manages global routing rules.
 
@@ -400,18 +405,18 @@ This section records the implemented API contract. All paths are relative to the
 | Test queue | `GET /api/requests?status=Testing` |
 | Unassigned candidates | `GET /api/requests`, then client prioritizes records without `agentId` |
 | User requests | `GET /api/requests?callerId={currentUserId}` |
-| Search/filter | `GET /api/requests` with `status`, `type`, `priority`, `orgId` or `search` |
+| Search/filter | `GET /api/requests` with `status`, `type`, `priority`, `teamId` or `search` |
 
 ### 9.4 Admin
 
 | Capability | Implemented endpoint group |
 | --- | --- |
-| Organization management | `/api/organizations` |
 | User management | `/api/users` |
 | Role management | `/api/roles` |
 | Permission dictionary | `/api/roles/permissions` |
 | Team management | `/api/teams` |
 | Routing rules | `/api/routing-rules` |
+| Code tables | `/api/code-tables/{tableCode}/items` |
 | Audit logs | `/api/audit-logs` |
 | Dashboard | `/api/dashboard/stats` |
 
@@ -421,13 +426,13 @@ The final implementation may reuse existing project entities where available. Th
 
 | Product object | Suggested backend object/table | Notes |
 | --- | --- | --- |
-| Organization | `organization` | Existing module can be reused |
 | User | `"user"` or existing user table | PostgreSQL reserved keyword must be quoted or renamed |
 | Role | `role` | Existing module can be reused and simplified |
 | Permission | role permission collection | Can remain JSON initially if backend validation is reliable |
 | Team | `team` | IT team container |
 | Team Member | `team_user_member` | Links authenticated users to workflow teams; legacy `team_member` remains for CMDB persons |
-| Request Type | `request_type` | Used for category and routing |
+| Request Type | `code_table_item` with `table_code = REQUEST_TYPE` | Used for category and routing; request stores the selected code |
+| Affected Service / System | `code_table_item` with `table_code = AFFECTED_SERVICE` | Used by New Request dropdown; request stores the selected code |
 | Routing Rule | `routing_rule` | Maps request type to team |
 | Request | `ticket` + `user_request` | Base ticket plus workflow request details and rich description |
 | Request History | `ticket_history` | Append-only lifecycle log |
@@ -473,7 +478,7 @@ The final implementation may reuse existing project entities where available. Th
 - Technicians can transfer requests between technicians within allowed IT scope.
 - Testers can operate the test queue.
 - Team Leads can manage team assignment and adjacent status corrections.
-- Admin can manage all organizations, users, roles, teams, routing rules and requests.
+- Admin can manage all users, roles, teams, routing rules and requests.
 
 ### 12.3 Logging
 
@@ -549,7 +554,7 @@ The workflow UI and Admin Console now use real backend APIs. Request rich text, 
 | Requester Portal | Added Home, New Request, All Requests, Ongoing Requests, Closed Requests and Request Detail | `src/views/portal/*`, `src/views/requests/RequestDetail.vue` |
 | New Request creation | Added requester-friendly fields, persisted rich text, pasted images and real attachments; client and server sanitize rich HTML | `src/views/portal/NewRequest.vue`, `src/api/requests.ts`, `src/api/attachments.ts`, `RequestController.java`, `AttachmentController.java` |
 | IT Workspace | Added Workflow Overview, Team Queue, My Tasks, Test Queue and Assignment Desk | `src/views/workspace/*` |
-| Admin Console | Reworked Admin Overview, Requests, Organizations, Users, Roles, Permissions, Teams, Routing Rules and Audit Logs; all listed pages use real APIs | `src/views/dashboard/index.vue`, `src/views/system/*`, `src/views/cmdb/OrganizationList.vue`, `src/api/system.ts` |
+| Admin Console | Reworked Admin Overview, Requests, Users, Roles, Permissions, Teams, Routing Rules, Code Tables and Audit Logs; all listed pages use real APIs; Organization page is removed | `src/views/dashboard/index.vue`, `src/views/system/*`, `src/api/system.ts` |
 | Request UI components | Added status tags, priority tags, dropdown status editor, assignee picker and reusable request table | `src/components/RequestStatusTag.vue`, `PriorityTag.vue`, `RequestTable.vue`, `src/views/requests/RequestDetail.vue` |
 | API contracts | Added shared request/system/attachment types and real API adapters; removed `mockAdmin.ts` and `mockRequests.ts` | `src/types/*`, `src/api/requests.ts`, `src/api/system.ts`, `src/api/attachments.ts` |
 | Visual style | Applied iTop-like dark sidebar, light workspace, orange accent, softer buttons and cleaner table actions | `src/layouts/MainLayout.vue`, `src/layouts/UserPortalLayout.vue`, `src/styles/index.scss` |
@@ -560,12 +565,13 @@ The workflow UI and Admin Console now use real backend APIs. Request rich text, 
 | Verification | Result |
 | --- | --- |
 | Production build | `npm run build` passed after the 2026-08-10 real-API changes |
+| Code Table build check | `npm run build` and `mvn -pl itop-api -am -DskipTests compile` passed after the 2026-08-11 Code Table changes |
 | Backend compile and tests | `mvn -pl itop-api -am -DskipTests compile` and `mvn -pl itop-api -am test` passed; 5 tests, 0 failures/errors |
 | Local page access | `/login`, `/portal`, `/workspace/overview`, `/users` returned HTTP 200 |
 | Browser smoke test | Admin login, Workspace Overview, Users and Portal rendered in Chrome without console errors |
 | Login zoom guard | Docker Chrome verified `Ctrl/Cmd + wheel` and `Ctrl/Cmd + +/-/0` are prevented on `/login`; Requester login redirects to `/portal`; no console errors or failed responses |
 | Taste-style UI regression | Docker Chrome verified `/login`, `/portal`, `/portal/new-request`, `/workspace/overview` and `/users` have no horizontal page overflow, no console errors and no failed responses |
-| Request Detail status/assignment | IT users can select any status; Requesters only see `Closed` and `User Test Failed` after `Resolved`; Assignment has no Team selector, options show team or organization, and one Save persists changes |
+| Request Detail status/assignment | IT users can select any status; Requesters only see `Closed` and `User Test Failed` after `Resolved`; Assignment has no Team selector, options show team, and one Save persists changes |
 | Task ordering | My Tasks sorts by priority then update time; Assignment Desk places unassigned requests first, then sorts by priority and update time |
 | Duplicate action cleanup | `Users` page now has one primary `New User` action; row actions use dropdown menu |
 | Language contract | New visible workflow pages are English |
@@ -575,26 +581,26 @@ The workflow UI and Admin Console now use real backend APIs. Request rich text, 
 | Area | Current status | Remaining work |
 | --- | --- | --- |
 | Request API | `RequestController` supports list, detail, create, assign, tester, status, comments, history and statuses; Portal, Workspace, Admin Requests and Detail use `src/api/requests.ts` | Complete Docker end-to-end verification |
-| Request creation validation | Backend create now requires Title, Affected Service / System, Description and Organization | Add update validation when editable request fields are introduced |
+| Request creation validation | Backend create now requires Title, Affected Service / System and Description; Organization is no longer required | Add update validation when editable request fields are introduced |
 | Routing | Routing Rule entity/service/controller and Admin UI use real CRUD APIs; request creation can auto-route by rule | Complete Docker routing verification |
 | Status changes | Backend persists selected states and writes one history event per transition; Requester transitions are restricted to `Resolved -> Closed/User Test Failed` | Optimistic locking remains a later hardening item |
-| Assignment | Backend persists team and agent assignment; `team_user_member` and `leader_user_id` map authenticated users; user options show team names before organization | Confirm final team visibility scope |
+| Assignment | Backend persists team and agent assignment; `team_user_member` and `leader_user_id` map authenticated users; user options show team names | Confirm final team visibility scope |
 | Comments | Backend supports public/internal comments and comment attachments; non-IT users cannot read internal comments | Complete Docker permission verification |
 | Attachments / rich description | Request and comment attachments upload/download through protected APIs; rich HTML is persisted and sanitized by jsoup; pasted images reference attachment IDs | Compose now persists files in `request_uploads`; complete Docker volume verification |
 | Auth | Backend JWT login and `/auth/me` exist; seeded workflow users are available with password `admin123`; login cards use these real accounts | Run container verification after Docker daemon is started |
-| Organization/team seed | V1.0.23 adds English organizations; V1.0.25 adds workflow team users and seeded teams | Run Flyway migrations in the rebuilt API container |
-| Admin APIs | Organizations, users, roles, permissions, teams, routing rules, audit logs and Dashboard use `src/api/system.ts` | Complete Docker CRUD verification |
+| Team seed | V1.0.25 adds workflow team users and seeded teams; V1.0.29 makes `team.org_id` optional | Run Flyway migrations in the rebuilt API container |
+| Admin APIs | Users, roles, permissions, teams, routing rules, code tables, audit logs and Dashboard use `src/api/system.ts` | Complete Docker CRUD verification |
 
 ### 15.4 Pending Product Confirmation
 
 | Topic | Current assumption | Decision needed |
 | --- | --- | --- |
 | Old frontend files | Confirmed: keep old FAQ/Service/Problem/Change files hidden for now | No decision needed |
-| Other users' request visibility | Backend currently applies organization access scope | Confirm whether full descriptions/public comments or only summary fields are visible |
+| Other users' request visibility | Organization access scope has been removed from the new request workflow | Confirm whether full descriptions/public comments or only summary fields are visible |
 | User Test Failed note | Confirmed: reason is optional and attachments can be added through comments | No decision needed |
 | Team scope | Cross-team transfer is confirmed and implemented | Confirm only the queue visibility scope and multi-team Team Lead behavior |
 | Closed reopen | Closed is treated as terminal in this phase | Confirm whether reopen remains P2 |
 | Attachment storage | Implemented as database metadata plus local file storage mounted to the `request_uploads` Docker volume | Revisit object storage only for production scaling |
 | Login account strategy | Frontend cards use real seeded users: `requester01`, `technician01`, `tester01`, `lead01`, `admin`; password `admin123` | Verify after container rebuild |
-| Organization strategy | New Request loads backend organizations and defaults to the current user's organization | Verify after Flyway runs in Docker |
+| Team strategy | New Request no longer asks for an organization; all requests default to ITMD unless a routing rule overrides the team | Verify after Flyway runs in Docker |
 | Docker environment | Code builds pass, but Docker compose cannot connect to `docker_engine` | Start Docker Desktop and rerun `docker compose up -d --build itop-api itop-web` |

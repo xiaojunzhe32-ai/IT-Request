@@ -1,8 +1,8 @@
 ﻿<template>
   <el-container class="main-layout">
-    <el-aside :width="isCollapse ? '68px' : '232px'" class="app-sidebar">
+    <el-aside :width="isCollapse ? '68px' : '280px'" class="app-sidebar">
       <div class="brand-lockup" :class="{ collapsed: isCollapse }">
-        <BrandLogo subtitle="Operations Console" :compact="isCollapse" />
+        <BrandLogo :compact="isCollapse" />
       </div>
 
       <el-menu
@@ -25,10 +25,6 @@
           <el-icon><Operation /></el-icon>
           <span>My Tasks</span>
         </el-menu-item>
-        <el-menu-item index="/workspace/test-queue" v-if="canShowMenu('request:read')">
-          <el-icon><Monitor /></el-icon>
-          <span>Test Queue</span>
-        </el-menu-item>
         <el-menu-item index="/workspace/assignment" v-if="canShowMenu('request:assign')">
           <el-icon><Connection /></el-icon>
           <span>Assignment</span>
@@ -43,29 +39,17 @@
           <el-icon><Tickets /></el-icon>
           <span>Requests</span>
         </el-menu-item>
-        <el-menu-item index="/organizations" v-if="userStore.isAdmin">
-          <el-icon><OfficeBuilding /></el-icon>
-          <span>Organizations</span>
-        </el-menu-item>
         <el-menu-item index="/users" v-if="userStore.isAdmin">
           <el-icon><User /></el-icon>
           <span>Users</span>
-        </el-menu-item>
-        <el-menu-item index="/roles" v-if="userStore.isAdmin">
-          <el-icon><Key /></el-icon>
-          <span>Roles</span>
-        </el-menu-item>
-        <el-menu-item index="/permissions" v-if="userStore.isAdmin">
-          <el-icon><Lock /></el-icon>
-          <span>Permissions</span>
         </el-menu-item>
         <el-menu-item index="/teams" v-if="userStore.isAdmin">
           <el-icon><UserFilled /></el-icon>
           <span>Teams</span>
         </el-menu-item>
-        <el-menu-item index="/routing-rules" v-if="userStore.isAdmin">
-          <el-icon><Connection /></el-icon>
-          <span>Routing Rules</span>
+        <el-menu-item index="/code-tables" v-if="userStore.isAdmin">
+          <el-icon><Collection /></el-icon>
+          <span>Code Tables</span>
         </el-menu-item>
         <el-menu-item index="/audit-logs" v-if="userStore.isAdmin">
           <el-icon><Document /></el-icon>
@@ -87,7 +71,6 @@
         </div>
 
         <div class="header-right">
-          <div class="environment-chip">Local Demo</div>
           <el-dropdown @command="handleCommand">
             <span class="user-info">
               <span class="user-avatar">{{ userInitial }}</span>
@@ -96,9 +79,7 @@
             </span>
             <template #dropdown>
               <el-dropdown-menu>
-                <el-dropdown-item command="portal">Open Portal</el-dropdown-item>
-                <el-dropdown-item command="profile">Profile</el-dropdown-item>
-                <el-dropdown-item command="logout" divided>Logout</el-dropdown-item>
+                <el-dropdown-item command="logout">Logout</el-dropdown-item>
               </el-dropdown-menu>
             </template>
           </el-dropdown>
@@ -122,15 +103,13 @@ import { useRouter, useRoute } from 'vue-router'
 import { ElMessageBox } from 'element-plus'
 import {
   ArrowDown,
+  Collection,
   Connection,
   Document,
   Expand,
   Fold,
-  Key,
-  Lock,
   Monitor,
   Odometer,
-  OfficeBuilding,
   Operation,
   Tickets,
   User,

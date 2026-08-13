@@ -31,9 +31,6 @@ LABEL maintainer="iTop Java Team"
 LABEL version="1.0.0"
 LABEL description="iTop Java CMDB Web Server"
 
-# Install curl for healthcheck
-RUN apk add --no-cache curl
-
 # Remove default nginx config
 RUN rm -rf /usr/share/nginx/html/*
 
@@ -45,7 +42,7 @@ COPY itop-web/nginx.conf /etc/nginx/nginx.conf
 
 # Add healthcheck
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
-  CMD curl -f http://localhost/ || exit 1
+  CMD wget -q -O /dev/null http://127.0.0.1:80/health || exit 1
 
 # Expose port
 EXPOSE 80

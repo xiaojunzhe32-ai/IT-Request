@@ -56,15 +56,27 @@ public class RequestService {
                                   String priority, Long orgId, String search, Long assigneeId, Long callerId) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
 
-        Set<Long> accessibleOrgIds = securityUtils.getAccessibleOrgIds();
-
         Specification<Ticket> spec = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
             // 仅返回 UserRequest 类型
             predicates.add(cb.equal(root.get("finalClass"), "UserRequest"));
-            if (accessibleOrgIds != null) {
-                predicates.add(root.get("organizationId").in(accessibleOrgIds));
+
+            // 团队数据隔离：非 Admin/ITMD 用户只能看到自己所属团队的工单，
+            // 或同团队成员提单的工单（提单人所在团队均可见）
+            Set<Long> accessibleTeamIds = securityUtils.getAccessibleTeamIds();
+            if (accessibleTeamIds != null) {
+                if (accessibleTeamIds.isEmpty()) {
+                    // 用户不属于任何团队且非 Admin/ITMD，返回空结果
+                    predicates.add(cb.disjunction());
+                } else {
+                    Set<Long> teamMemberUserIds = teamRepository.findMemberUserIdsByTeamIdIn(accessibleTeamIds);
+                    predicates.add(cb.or(
+                            root.get("teamId").in(accessibleTeamIds),
+                            root.get("callerId").in(teamMemberUserIds)
+                    ));
+                }
             }
+
             if (status != null && !status.isEmpty()) {
                 Ticket.TicketStatus statusEnum = parseStatusEnum(status);
                 if (statusEnum != null) {
@@ -79,9 +91,6 @@ public class RequestService {
             }
             if (priority != null && !priority.isEmpty()) {
                 predicates.add(cb.equal(root.get("priority"), normalizePriority(priority)));
-            }
-            if (orgId != null) {
-                predicates.add(cb.equal(root.get("organizationId"), orgId));
             }
             if (assigneeId != null) {
                 predicates.add(cb.equal(root.get("agentId"), assigneeId));
@@ -106,6 +115,7 @@ public class RequestService {
     @Transactional(readOnly = true)
     public RequestDTO getById(Long id) {
         return ticketRepository.findById(id)
+                .filter(ticket -> securityUtils.canAccessTicket(ticket.getTeamId(), ticket.getCallerId()))
                 .map(this::toDTO)
                 .orElse(null);
     }
@@ -114,10 +124,7 @@ public class RequestService {
     public boolean canView(Long ticketId) {
         return ticketRepository.findById(ticketId)
                 .filter(ticket -> ticket instanceof UserRequest)
-                .map(ticket -> {
-                    Set<Long> accessibleOrgIds = securityUtils.getAccessibleOrgIds();
-                    return accessibleOrgIds == null || accessibleOrgIds.contains(ticket.getOrganizationId());
-                })
+                .map(ticket -> securityUtils.canAccessTicket(ticket.getTeamId(), ticket.getCallerId()))
                 .orElse(false);
     }
 
@@ -139,6 +146,9 @@ public class RequestService {
 
     @Transactional(readOnly = true)
     public List<RequestDTO.RequestHistoryDTO> getHistory(Long ticketId) {
+        if (!canView(ticketId)) {
+            return Collections.emptyList();
+        }
         return historyRepository.findByTicketIdOrderByCreatedAtDesc(ticketId).stream()
                 .map(this::toHistoryDTO)
                 .collect(Collectors.toList());
@@ -146,6 +156,9 @@ public class RequestService {
 
     @Transactional(readOnly = true)
     public List<RequestDTO.RequestCommentDTO> getComments(Long ticketId, boolean includeInternal) {
+        if (!canView(ticketId)) {
+            return Collections.emptyList();
+        }
         List<RequestComment> comments = includeInternal
                 ? commentRepository.findByTicketIdOrderByCreatedAtAsc(ticketId)
                 : commentRepository.findByTicketIdAndLogTypeNotOrderByCreatedAtAsc(ticketId, RequestComment.LogType.INTERNAL);
@@ -172,14 +185,15 @@ public class RequestService {
             request.setCallerId(callerId);
         }
 
-        // 自动路由：按规则匹配团队
-        Long routedTeamId = routingRuleService.matchRequest(
-                dto.getOrganizationId(), dto.getType(), request.getPriority());
-        if (routedTeamId != null) {
-            request.setTeamId(routedTeamId);
-            request.setTicketStatus(Ticket.TicketStatus.ASSIGNED);
-        } else {
-            request.setTicketStatus(Ticket.TicketStatus.NEW);
+        // 团队分配：优先使用前端传入的 teamId，没有才走路由规则
+        Long targetTeamId = dto.getTeamId();
+        if (targetTeamId == null) {
+            targetTeamId = routingRuleService.matchRequest(
+                    dto.getOrganizationId(), dto.getType(), request.getPriority(), dto.getAffectedService());
+        }
+        request.setTicketStatus(Ticket.TicketStatus.NEW);
+        if (targetTeamId != null) {
+            request.setTeamId(targetTeamId);
         }
 
         slaService.applySLA(request);
@@ -193,12 +207,12 @@ public class RequestService {
         String actor = resolveUserName(userId);
         logHistory(request.getId(), "REQUEST_CREATED", actor, "Created request from Portal.", false, userId,
                 null, statusName(request.getTicketStatus()), null, null, null, null);
-        if (routedTeamId != null) {
-            String teamName = resolveTeamName(routedTeamId);
+        if (targetTeamId != null) {
+            String teamName = resolveTeamName(targetTeamId);
             logHistory(request.getId(), "REQUEST_ROUTED", "System",
-                    "Routed to " + (teamName != null ? teamName : "team " + routedTeamId) + ".", false, null,
-                    Ticket.TicketStatus.NEW.name(), Ticket.TicketStatus.ASSIGNED.name(),
-                    null, null, null, routedTeamId);
+                    "Routed to " + (teamName != null ? teamName : "team " + targetTeamId) + ".", false, null,
+                    statusName(request.getTicketStatus()), statusName(request.getTicketStatus()),
+                    null, null, null, targetTeamId);
         }
 
         return toDTO(request);
@@ -210,6 +224,9 @@ public class RequestService {
     public RequestDTO assign(Long id, Long teamId, Long agentId) {
         Ticket ticket = ticketRepository.findById(id).orElse(null);
         if (ticket == null) {
+            return null;
+        }
+        if (!securityUtils.canAccessTicket(ticket.getTeamId(), ticket.getCallerId())) {
             return null;
         }
         Long oldAgentId = ticket.getAgentId();
@@ -249,6 +266,9 @@ public class RequestService {
         if (ticket == null) {
             return null;
         }
+        if (!securityUtils.canAccessTicket(ticket.getTeamId(), ticket.getCallerId())) {
+            return null;
+        }
         ticket.setTesterId(testerId);
         ticket.setLastUpdateDate(LocalDateTime.now());
         ticket = ticketRepository.save(ticket);
@@ -261,6 +281,9 @@ public class RequestService {
     public RequestDTO transition(Long id, String nextStatusLabel, String note) {
         Ticket ticket = ticketRepository.findById(id).orElse(null);
         if (ticket == null) {
+            return null;
+        }
+        if (!securityUtils.canAccessTicket(ticket.getTeamId(), ticket.getCallerId())) {
             return null;
         }
         Ticket.TicketStatus nextStatus = parseStatusEnum(nextStatusLabel);
@@ -304,6 +327,9 @@ public class RequestService {
         if (!(ticket instanceof UserRequest request)) {
             return null;
         }
+        if (!securityUtils.canAccessTicket(ticket.getTeamId(), ticket.getCallerId())) {
+            return null;
+        }
         request.setDescription(description);
         request.setDescriptionHtml(sanitizeRichText(descriptionHtml));
         request.setLastUpdateDate(LocalDateTime.now());
@@ -319,6 +345,9 @@ public class RequestService {
 
     @Transactional
     public RequestDTO.RequestCommentDTO addComment(Long ticketId, String message, boolean internal) {
+        if (!canView(ticketId)) {
+            return null;
+        }
         Long userId = securityUtils.getCurrentUserId();
         String username = securityUtils.getCurrentUsername();
         RequestComment.LogType logType = internal ? RequestComment.LogType.INTERNAL : RequestComment.LogType.PUBLIC;

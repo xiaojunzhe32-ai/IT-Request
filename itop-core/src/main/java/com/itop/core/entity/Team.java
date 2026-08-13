@@ -17,7 +17,7 @@ import java.util.List;
 @NoArgsConstructor
 public class Team extends BaseEntity {
 
-    @Column(name = "org_id", nullable = false)
+    @Column(name = "org_id")
     private Long organizationId;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -28,7 +28,7 @@ public class Team extends BaseEntity {
     private String teamCode;
 
     @Column(name = "team_type", length = 50)
-    private String teamType = "SUPPORT"; // HELPDESK, SUPPORT, CHANGE, PROBLEM
+    private String teamType = "IT_TEAM"; // IT_TEAM (can receive requests), USER_TEAM
 
     @Column(name = "leader_id")
     private Long leaderId;
@@ -65,6 +65,19 @@ public class Team extends BaseEntity {
         inverseJoinColumns = @JoinColumn(name = "user_id")
     )
     private List<User> memberUsers = new ArrayList<>();
+
+    /**
+     * 团队负责人列表（多 Leader）。
+     * Leader 必须是 Members 的子集，存储在 team_user_leader 关联表中。
+     * Leader 仅作为标签，不赋予额外的团队管理权限。
+     */
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "team_user_leader",
+        joinColumns = @JoinColumn(name = "team_id"),
+        inverseJoinColumns = @JoinColumn(name = "user_id")
+    )
+    private List<User> leaderUsers = new ArrayList<>();
 
     public Team(String name, Long organizationId) {
         this.setName(name);

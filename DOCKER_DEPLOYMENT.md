@@ -370,6 +370,72 @@ git pull
 
 ---
 
+## 192.168.1.25 当前构建记录（不要重复踩坑）
+
+### 已验证的后端更新路线
+
+```bash
+# 本地打包完整后端构建上下文，不要只传旧镜像 tar
+7z a -ttar itop-src.tar pom.xml itop-common/pom.xml itop-common/src itop-core/pom.xml itop-core/src itop-cmdb/pom.xml itop-cmdb/src itop-api/pom.xml itop-api/src itop-api/Dockerfile itop-web/pom.xml -xr!target -xr!node_modules -xr!dist
+
+# 服务器使用 mh + sudo；root SSH 登录失败过，不要再试 root
+cd /home/mh/itop-java
+docker compose build --no-cache itop-api
+docker compose up -d --no-deps itop-api
+```
+
+必须保留当前 `itop-api/Dockerfile` 的服务器友好改动：Maven 使用阿里云 mirror、不要 `apk add`、healthcheck 使用 Alpine 自带 `wget`。服务器 `/home/mh/itop-java` 可能没有完整源码，构建前必须上传并解压最新 `itop-src.tar`。
+
+### 已验证失败或不推荐路线
+
+- 不要依赖旧的本地 `itop-api.tar` / `itop-images.tar`，容易部署到过期镜像。
+- 本机 Docker Desktop daemon 未稳定前，不要走本机构建。
+- 服务器上不要用 `docker-compose`，该机可用的是 `docker compose`。
+- 不要让 Dockerfile 在服务器构建时访问 Alpine `apk add` 或 Maven Central 直连，之前会 TLS 失败。
+- 不要用 `docker compose up --force-recreate itop-api` 在外部网络被孤儿容器占用时强制重建；若只修健康检查，可最小化重建 API 容器配置。
+
+### 当前健康检查结论
+
+`docker-compose.yml` 会覆盖镜像里的 healthcheck。后端容器内没有 `curl`，所以 compose 中必须使用：
+
+```yaml
+healthcheck:
+  test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/api/actuator/health"]
+```
+
+前端容器也不要使用 `curl` 或 `localhost` 健康检查；服务器已验证可用命令是：
+
+```yaml
+healthcheck:
+  test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:80/health"]
+```
+
+### 已验证的前端更新路线
+
+只更新左侧菜单/页面等前端内容时，不要重建 API，不要碰数据库。服务器 compose 在存在活动网络端点时可能会尝试删除 `itop-java_itop-network` 并失败，因此已验证的最小路线是：
+
+```bash
+# 本地只打包前端构建上下文
+7z a -ttar itop-web-src.tar docker-compose.yml itop-web/Dockerfile itop-web/nginx.conf itop-web/src/main/frontend -xr!node_modules -xr!dist
+
+# 服务器只构建前端镜像
+cd /home/mh/itop-java
+docker compose build --no-cache itop-web
+
+# 若 docker compose up -d --no-deps itop-web 因网络删除失败，手动只替换 web 容器
+docker rm -f itop-web
+docker run -d --name itop-web --restart unless-stopped --network itop-java_itop-network -p 8090:80 \
+  --health-cmd='wget -q -O /dev/null http://127.0.0.1:80/health || exit 1' \
+  --health-interval=30s --health-timeout=5s --health-retries=3 --health-start-period=10s \
+  itop-web:latest
+```
+
+2026-08-13 已验证服务器状态：`itop-api` healthy，`itop-web` healthy，页面 `http://localhost:8090/` 返回 200。构建产物中未再检出独立菜单字符串 `Organizations / Roles / Permissions / Routing Rules`。
+
+2026-08-13 已验证服务器后端状态：`itop-api Up ... (healthy)`，接口 `http://localhost:8080/api/actuator/health` 返回 `{"status":"UP"}`。
+
+---
+
 ## 📞 技术支持
 
 如遇问题，请查看：

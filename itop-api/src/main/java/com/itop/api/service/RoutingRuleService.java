@@ -48,15 +48,7 @@ public class RoutingRuleService {
     public RoutingRuleDTO create(RoutingRuleDTO dto) {
         RoutingRule rule = new RoutingRule(dto.getName());
         applyDto(rule, dto);
-        if (rule.getSortOrder() == null) {
-            rule.setSortOrder(100);
-        }
-        if (rule.getEnabled() == null) {
-            rule.setEnabled(true);
-        }
-        if (rule.getIsFallback() == null) {
-            rule.setIsFallback(false);
-        }
+        normalizeDefaults(rule);
         rule = routingRuleRepository.save(rule);
         return toDTO(rule);
     }
@@ -68,6 +60,7 @@ public class RoutingRuleService {
             return null;
         }
         applyDto(rule, dto);
+        normalizeDefaults(rule);
         rule = routingRuleRepository.save(rule);
         return toDTO(rule);
     }
@@ -91,7 +84,7 @@ public class RoutingRuleService {
         if (rule == null) {
             return null;
         }
-        rule.setEnabled(enabled);
+        rule.setEnabled(Boolean.TRUE.equals(rule.getIsFallback()) ? true : enabled);
         rule = routingRuleRepository.save(rule);
         return toDTO(rule);
     }
@@ -115,19 +108,20 @@ public class RoutingRuleService {
     /**
      * 匹配请求，返回应分配的团队 ID。
      *
-     * @param organizationId 请求所属组织（可空）
-     * @param requestType    请求类型（可空）
-     * @param priority       优先级（可空）
+     * @param organizationId  请求所属组织（可空）
+     * @param requestType      请求类型（可空）
+     * @param priority         优先级（可空）
+     * @param affectedService  受影响服务（可空）
      * @return 命中规则的团队 ID；无命中且无兜底规则时返回 null
      */
     @Transactional(readOnly = true)
-    public Long matchRequest(Long organizationId, String requestType, String priority) {
+    public Long matchRequest(Long organizationId, String requestType, String priority, String affectedService) {
         List<RoutingRule> rules = routingRuleRepository.findByEnabledTrueOrderBySortOrderAscIdAsc();
         for (RoutingRule rule : rules) {
             if (Boolean.TRUE.equals(rule.getIsFallback())) {
                 continue;
             }
-            if (matches(rule, organizationId, requestType, priority)) {
+            if (matches(rule, organizationId, requestType, priority, affectedService)) {
                 return rule.getTeamId();
             }
         }
@@ -136,8 +130,27 @@ public class RoutingRuleService {
                 .orElse(null);
     }
 
-    private boolean matches(RoutingRule rule, Long organizationId, String requestType, String priority) {
+    /**
+     * 建议团队：供前端实时预览，返回匹配到的 teamId 和 teamName。
+     */
+    @Transactional(readOnly = true)
+    public RoutingRuleDTO suggestTeam(Long organizationId, String requestType, String priority, String affectedService) {
+        Long teamId = matchRequest(organizationId, requestType, priority, affectedService);
+        if (teamId == null) {
+            return null;
+        }
+        RoutingRuleDTO dto = new RoutingRuleDTO();
+        dto.setTeamId(teamId);
+        teamRepository.findById(teamId).map(Team::getName).ifPresent(dto::setTeamName);
+        return dto;
+    }
+
+    private boolean matches(RoutingRule rule, Long organizationId, String requestType, String priority, String affectedService) {
         if (rule.getOrganizationId() != null && !rule.getOrganizationId().equals(organizationId)) {
+            return false;
+        }
+        if (rule.getAffectedService() != null && !rule.getAffectedService().isEmpty()
+                && !rule.getAffectedService().equalsIgnoreCase(affectedService)) {
             return false;
         }
         if (rule.getRequestType() != null && !rule.getRequestType().isEmpty()
@@ -157,6 +170,7 @@ public class RoutingRuleService {
         }
         rule.setDescription(dto.getDescription());
         rule.setOrganizationId(dto.getOrganizationId());
+        rule.setAffectedService(dto.getAffectedService());
         rule.setRequestType(dto.getRequestType());
         rule.setPriority(dto.getPriority());
         rule.setTeamId(dto.getTeamId());
@@ -171,12 +185,27 @@ public class RoutingRuleService {
         }
     }
 
+    private void normalizeDefaults(RoutingRule rule) {
+        if (rule.getIsFallback() == null) {
+            rule.setIsFallback(false);
+        }
+        if (Boolean.TRUE.equals(rule.getIsFallback())) {
+            rule.setEnabled(true);
+        } else if (rule.getEnabled() == null) {
+            rule.setEnabled(false);
+        }
+        if (rule.getSortOrder() == null) {
+            rule.setSortOrder(100);
+        }
+    }
+
     private RoutingRuleDTO toDTO(RoutingRule rule) {
         RoutingRuleDTO.RoutingRuleDTOBuilder b = RoutingRuleDTO.builder()
                 .id(rule.getId())
                 .name(rule.getName())
                 .description(rule.getDescription())
                 .organizationId(rule.getOrganizationId())
+                .affectedService(rule.getAffectedService())
                 .requestType(rule.getRequestType())
                 .priority(rule.getPriority())
                 .teamId(rule.getTeamId())

@@ -24,6 +24,18 @@ public class RoutingRuleController {
     private final RoutingRuleService routingRuleService;
     private final AuditService auditService;
 
+    @Operation(summary = "Suggest team", description = "Suggest a team based on routing rules for the given criteria")
+    @GetMapping("/suggest")
+    @PreAuthorize("@securityUtils.hasPermission('request:write')")
+    public ResponseEntity<ApiResponse<RoutingRuleDTO>> suggestTeam(
+            @RequestParam(value = "organizationId", required = false) Long organizationId,
+            @RequestParam(value = "requestType", required = false) String requestType,
+            @RequestParam(value = "priority", required = false) String priority,
+            @RequestParam(value = "affectedService", required = false) String affectedService) {
+        RoutingRuleDTO suggested = routingRuleService.suggestTeam(organizationId, requestType, priority, affectedService);
+        return ResponseEntity.ok(ApiResponse.success(suggested));
+    }
+
     @Operation(summary = "Get all routing rules", description = "Retrieve all routing rules ordered by priority")
     @GetMapping
     @PreAuthorize("@securityUtils.hasPermission('routing:read')")

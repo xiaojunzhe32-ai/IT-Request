@@ -56,42 +56,67 @@
               </div>
             </div>
           </template>
-          <el-descriptions :column="2" border>
-            <el-descriptions-item label="Type">{{ request.type }}</el-descriptions-item>
-            <el-descriptions-item label="Priority">
-              <PriorityTag :priority="request.priority" />
-            </el-descriptions-item>
-            <el-descriptions-item v-if="request.affectedService" label="Affected Service / System">
-              {{ request.affectedService }}
-            </el-descriptions-item>
-            <el-descriptions-item v-if="request.occurrenceTime" label="Occurrence Time">
-              {{ formatDateTime(request.occurrenceTime) }}
-            </el-descriptions-item>
-            <el-descriptions-item v-if="request.requestedResolutionTime" label="Requested Resolution Time">
-              {{ formatDateTime(request.requestedResolutionTime) }}
-            </el-descriptions-item>
-            <el-descriptions-item label="Requester">{{ request.requester }}</el-descriptions-item>
-            <el-descriptions-item label="Organization">{{ request.requesterOrg }}</el-descriptions-item>
-            <el-descriptions-item label="Team">{{ request.assignedTeam }}</el-descriptions-item>
-            <el-descriptions-item label="Assignee">{{ request.assignee || 'Unassigned' }}</el-descriptions-item>
-            <el-descriptions-item label="Tester">{{ request.tester }}</el-descriptions-item>
-            <el-descriptions-item label="Description" :span="2">
-              <div v-if="safeDescriptionHtml" class="rich-description" v-html="safeDescriptionHtml" />
-              <span v-else>{{ request.description }}</span>
-            </el-descriptions-item>
-            <el-descriptions-item v-if="request.attachments?.length" label="Attachments" :span="2">
-              <div class="detail-attachment-list">
-                <el-button
-                  v-for="attachment in request.attachments"
-                  :key="attachment.id"
-                  text
-                  @click="downloadAttachment(attachment)"
-                >
-                  {{ attachment.originalName }}
-                </el-button>
+          <div class="info-grid">
+            <div class="info-cell">
+              <span class="info-label">Type</span>
+              <span class="info-value">{{ requestTypeLabel(request.type) }}</span>
+            </div>
+            <div class="info-cell">
+              <span class="info-label">Priority</span>
+              <span class="info-value"><PriorityTag :priority="request.priority" /></span>
+            </div>
+            <div class="info-cell">
+              <span class="info-label">Requester</span>
+              <span class="info-value">{{ request.requester }}</span>
+            </div>
+            <div class="info-cell">
+              <span class="info-label">Team</span>
+              <span class="info-value">{{ request.assignedTeam }}</span>
+            </div>
+            <div class="info-cell">
+              <span class="info-label">Assignee</span>
+              <span class="info-value">{{ request.assignee || 'Unassigned' }}</span>
+            </div>
+            <div class="info-cell">
+              <span class="info-label">Tester</span>
+              <span class="info-value">{{ request.tester }}</span>
+            </div>
+            <div v-if="request.affectedService" class="info-cell">
+              <span class="info-label">Affected Service</span>
+              <span class="info-value">{{ affectedServiceLabel(request.affectedService) }}</span>
+            </div>
+            <div class="info-cell">
+              <span class="info-label">Occurrence Time</span>
+              <span class="info-value">{{ request.occurrenceTime ? formatDateTime(request.occurrenceTime) : '-' }}</span>
+            </div>
+            <div class="info-cell">
+              <span class="info-label">Resolution Time</span>
+              <span class="info-value">{{ request.requestedResolutionTime ? formatDateTime(request.requestedResolutionTime) : '-' }}</span>
+            </div>
+          </div>
+
+          <div v-if="request.description || safeDescriptionHtml || imageAttachments.length" class="section-block">
+            <div class="section-label">Description</div>
+            <div class="description-window">
+              <div v-if="safeDescriptionHtml" ref="descriptionRef" class="rich-description" v-html="safeDescriptionHtml" @click="handleDescriptionClick" />
+              <span v-else-if="request.description" class="description-text">{{ request.description }}</span>
+            </div>
+          </div>
+
+          <div v-if="nonImageAttachments.length" class="section-block">
+            <div class="section-label">Attachments</div>
+            <div class="detail-attachment-list">
+              <div
+                v-for="attachment in nonImageAttachments"
+                :key="attachment.id"
+                class="attachment-row"
+              >
+                <el-icon class="attachment-icon"><Document /></el-icon>
+                <span class="attachment-name" :title="attachment.originalName">{{ attachment.originalName }}</span>
+                <el-button text size="small" @click="downloadAttachment(attachment)">Download</el-button>
               </div>
-            </el-descriptions-item>
-          </el-descriptions>
+            </div>
+          </div>
         </el-card>
 
         <el-card class="surface-card" shadow="never">
@@ -113,15 +138,28 @@
                   <el-tag v-if="comment.internal" size="small" type="warning" effect="light">Internal</el-tag>
                 </div>
                 <p>{{ comment.message }}</p>
-                <div v-if="comment.attachments?.length" class="comment-attachments">
-                  <el-button
-                    v-for="attachment in comment.attachments"
+                <div v-if="commentImageAttachments(comment).length" class="comment-image-list">
+                  <el-image
+                    v-for="attachment in commentImageAttachments(comment)"
                     :key="attachment.id"
-                    text
-                    @click="downloadAttachment(attachment)"
+                    :src="imageUrls[attachment.id]"
+                    :preview-src-list="commentImagePreviewList(comment)"
+                    :initial-index="commentImagePreviewIndex(comment, attachment.id)"
+                    :preview-teleported="true"
+                    :hide-on-click-modal="true"
+                    class="comment-image-thumb"
+                  />
+                </div>
+                <div v-if="commentNonImageAttachments(comment).length" class="comment-attachments">
+                  <div
+                    v-for="attachment in commentNonImageAttachments(comment)"
+                    :key="attachment.id"
+                    class="attachment-row"
                   >
-                    {{ attachment.originalName }}
-                  </el-button>
+                    <el-icon class="attachment-icon"><Document /></el-icon>
+                    <span class="attachment-name" :title="attachment.originalName">{{ attachment.originalName }}</span>
+                    <el-button text size="small" @click="downloadAttachment(attachment)">Download</el-button>
+                  </div>
                 </div>
               </div>
             </article>
@@ -139,6 +177,7 @@
               class="file-input"
               type="file"
               multiple
+              :accept="ACCEPT_ATTR"
               @change="handleCommentFiles"
             >
             <div v-if="commentFiles.length" class="pending-attachments">
@@ -179,12 +218,12 @@
                 <el-option
                   v-for="person in assigneeOptions"
                   :key="person.id"
-                  :label="`${person.name} - ${person.organization}`"
+                  :label="`${person.name} - ${person.team}`"
                   :value="person.id"
                 >
                   <div class="assignee-option">
                     <span>{{ person.name }}</span>
-                    <small>{{ person.organization }}</small>
+                    <small>{{ person.team }}</small>
                   </div>
                 </el-option>
               </el-select>
@@ -238,6 +277,17 @@
         <el-button type="primary" @click="saveAndExit">Save</el-button>
       </template>
     </el-dialog>
+
+    <el-dialog
+      v-model="descImagePreviewVisible"
+      :show-close="true"
+      :close-on-click-modal="true"
+      align-center
+      width="auto"
+      append-to-body
+    >
+      <img :src="descPreviewSrc" class="desc-preview-img" />
+    </el-dialog>
   </div>
 </template>
 
@@ -245,6 +295,7 @@
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { Document, Picture } from '@element-plus/icons-vue'
 import PageHeader from '@/components/PageHeader.vue'
 import PriorityTag from '@/components/PriorityTag.vue'
 import RequestStatusTag from '@/components/RequestStatusTag.vue'
@@ -252,14 +303,16 @@ import { requestApi } from '@/api/requests'
 import { attachmentApi } from '@/api/attachments'
 import { userApi } from '@/api/system'
 import { requestStatuses, sanitizeRequestHtml } from '@/data/requestOptions'
+import { useCodeTableStore } from '@/stores/codeTables'
 import type { RequestAttachment, RequestHistoryItem, RequestStatus, WorkflowRequest } from '@/types/requests'
 import type { SystemUser } from '@/types/system'
 import { formatDateTime } from '@/utils/format'
+import { validateFile, validateBatch, ACCEPT_ATTR } from '@/utils/uploadValidation'
 
 interface AssigneeOption {
   id: number
   name: string
-  organization: string
+  team: string
 }
 
 interface HistoryPart {
@@ -269,6 +322,7 @@ interface HistoryPart {
 
 const route = useRoute()
 const router = useRouter()
+const codeTableStore = useCodeTableStore()
 const request = ref<WorkflowRequest>({
   id: Number(route.params.id) || 0,
   requestNo: 'Loading...',
@@ -278,7 +332,6 @@ const request = ref<WorkflowRequest>({
   priority: 'Medium',
   status: 'New',
   requester: '',
-  requesterOrg: '',
   assignedTeam: '',
   assignee: '',
   tester: '',
@@ -296,9 +349,69 @@ const commentFiles = ref<File[]>([])
 const submittingComment = ref(false)
 const statusDraft = ref<RequestStatus>('New')
 const unsavedDialogVisible = ref(false)
+const descriptionRef = ref<HTMLElement>()
+const descImagePreviewVisible = ref(false)
+const descPreviewSrc = ref('')
 const pendingLeaveAction = ref<(() => void) | null>(null)
 let allowRouteLeave = false
 let inlineBlobUrls: string[] = []
+const imageUrls = ref<Record<number, string>>({})
+
+const isImage = (attachment: RequestAttachment) => {
+  const type = attachment.contentType || ''
+  const name = attachment.originalName || ''
+  return type.startsWith('image/') || /\.(png|jpe?g|gif|bmp|svg|webp)$/i.test(name)
+}
+
+const imageAttachments = computed(() =>
+  (request.value.attachments || []).filter(isImage)
+)
+
+const nonImageAttachments = computed(() =>
+  (request.value.attachments || []).filter((a) => !isImage(a))
+)
+
+const imagePreviewList = computed(() =>
+  imageAttachments.value
+    .map((a) => imageUrls.value[a.id])
+    .filter(Boolean) as string[]
+)
+
+const imagePreviewIndex = (id: number) => {
+  const idx = imageAttachments.value.findIndex((a) => a.id === id)
+  return idx >= 0 ? idx : 0
+}
+
+const commentImageAttachments = (comment: { attachments?: RequestAttachment[] }) =>
+  (comment.attachments || []).filter(isImage)
+
+const commentNonImageAttachments = (comment: { attachments?: RequestAttachment[] }) =>
+  (comment.attachments || []).filter((a) => !isImage(a))
+
+const commentImagePreviewList = (comment: { attachments?: RequestAttachment[] }) =>
+  commentImageAttachments(comment)
+    .map((a) => imageUrls.value[a.id])
+    .filter(Boolean) as string[]
+
+const commentImagePreviewIndex = (comment: { attachments?: RequestAttachment[] }, id: number) => {
+  const imgs = commentImageAttachments(comment)
+  const idx = imgs.findIndex((a) => a.id === id)
+  return idx >= 0 ? idx : 0
+}
+
+const loadImageUrls = async () => {
+  const all: RequestAttachment[] = [
+    ...(request.value.attachments || []),
+    ...(request.value.comments || []).flatMap((c) => c.attachments || [])
+  ]
+  await Promise.all(all.filter(isImage).map(async (att) => {
+    if (imageUrls.value[att.id]) return
+    try {
+      const blob = await attachmentApi.download(att.id)
+      imageUrls.value[att.id] = URL.createObjectURL(blob)
+    } catch { /* skip */ }
+  }))
+}
 
 const portalMode = computed(() => route.path.startsWith('/portal'))
 const visibleStatusOptions = computed<RequestStatus[]>(() => {
@@ -325,7 +438,7 @@ const displayUserName = (user: SystemUser) => {
 }
 
 const assigneeOptions = computed<AssigneeOption[]>(() => {
-  const assignableRoles = new Set(['ADMIN', 'TEAM_LEAD', 'TECHNICIAN', 'TESTER'])
+  const assignableRoles = new Set(['ADMIN', 'TEAM_LEAD', 'TECHNICIAN'])
   const people = new Map<number, AssigneeOption>()
 
   users.value.forEach((user) => {
@@ -335,7 +448,7 @@ const assigneeOptions = computed<AssigneeOption[]>(() => {
     people.set(user.id, {
       id: user.id,
       name: displayUserName(user),
-      organization: user.teamNames?.length ? user.teamNames.join(', ') : user.organizationName || 'Organization not set'
+      team: user.teamNames?.length ? user.teamNames.join(', ') : 'No team'
     })
   })
 
@@ -343,7 +456,7 @@ const assigneeOptions = computed<AssigneeOption[]>(() => {
     people.set(request.value.agentId, {
       id: request.value.agentId,
       name: request.value.assignee || `User ${request.value.agentId}`,
-      organization: request.value.assignedTeam || 'Current assignment'
+      team: request.value.assignedTeam || 'Current assignment'
     })
   }
 
@@ -362,7 +475,10 @@ const safeDescriptionHtml = ref('')
 const formatHistoryAction = (action: string) => action
   .replace(/_/g, ' ')
   .toLowerCase()
-  .replace(/\b\w/g, (letter) => letter.toUpperCase())
+    .replace(/\b\w/g, (letter) => letter.toUpperCase())
+
+const requestTypeLabel = (value?: string) => codeTableStore.labelFor('REQUEST_TYPE', value, value || '-')
+const affectedServiceLabel = (value?: string) => codeTableStore.labelFor('AFFECTED_SERVICE', value, value || '-')
 
 const formatHistoryParts = (item: RequestHistoryItem): HistoryPart[] => {
   const detail = item.detail || ''
@@ -424,6 +540,14 @@ const hydrateDescriptionImages = async () => {
   safeDescriptionHtml.value = template.innerHTML
 }
 
+const handleDescriptionClick = (event: MouseEvent) => {
+  const target = event.target as HTMLElement
+  if (target.tagName === 'IMG') {
+    descPreviewSrc.value = (target as HTMLImageElement).src
+    descImagePreviewVisible.value = true
+  }
+}
+
 const syncDraftsFromRequest = () => {
   statusDraft.value = request.value.status
   assignment.assigneeId = request.value.agentId
@@ -435,6 +559,7 @@ const loadRequest = async () => {
     request.value = await requestApi.getById(Number(route.params.id))
     syncDraftsFromRequest()
     await hydrateDescriptionImages()
+    await loadImageUrls()
   } catch {
     ElMessage.error('Unable to load request detail')
   } finally {
@@ -564,7 +689,24 @@ const submitComment = async () => {
 
 const handleCommentFiles = (event: Event) => {
   const target = event.target as HTMLInputElement
-  commentFiles.value.push(...Array.from(target.files || []))
+  const newFiles = Array.from(target.files || [])
+  const validFiles: File[] = []
+  for (const file of newFiles) {
+    const result = validateFile(file)
+    if (result.valid) {
+      validFiles.push(file)
+    } else {
+      ElMessage.warning(result.error)
+    }
+  }
+  if (validFiles.length) {
+    const batchResult = validateBatch([...commentFiles.value, ...validFiles])
+    if (!batchResult.valid) {
+      ElMessage.warning(batchResult.error)
+    } else {
+      commentFiles.value.push(...validFiles)
+    }
+  }
   target.value = ''
 }
 
@@ -602,6 +744,7 @@ const handleBeforeUnload = (event: BeforeUnloadEvent) => {
 
 onMounted(() => {
   window.addEventListener('beforeunload', handleBeforeUnload)
+  codeTableStore.ensureTables('REQUEST_TYPE', 'AFFECTED_SERVICE').catch(() => undefined)
   loadRequest()
   loadUsers()
 })
@@ -609,6 +752,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   window.removeEventListener('beforeunload', handleBeforeUnload)
   clearInlineBlobUrls()
+  Object.values(imageUrls.value).forEach((url) => URL.revokeObjectURL(url))
 })
 </script>
 
@@ -692,6 +836,7 @@ onBeforeUnmount(() => {
   margin: 8px 0;
   border-radius: 10px;
   border: 1px solid #e5e7eb;
+  cursor: pointer;
 }
 
 .rich-description :deep(pre) {
@@ -702,10 +847,113 @@ onBeforeUnmount(() => {
   color: #f8fafc;
 }
 
-.detail-attachment-list {
+.description-window {
+  max-height: 600px;
+  overflow-y: auto;
+  padding: 4px;
+  border-radius: 8px;
+}
+
+.section-block {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid #edf0f3;
+}
+
+.section-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #344054;
+  margin-bottom: 8px;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 1px;
+  background: #e5e7eb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.info-cell {
   display: flex;
-  gap: 8px;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 12px;
+  background: #fff;
+}
+
+.info-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #98a2b3;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.info-value {
+  font-size: 13px;
+  color: #344054;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.description-text {
+  color: #344054;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.description-images {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.inline-image {
+  width: 100%;
+  max-height: 500px;
+  border-radius: 8px;
+  cursor: pointer;
+  border: 1px solid #e5e7eb;
+}
+
+.inline-image:hover {
+  border-color: #3b82f6;
+}
+
+.comment-image-list {
+  display: flex;
   flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.comment-image-thumb {
+  width: 120px;
+  height: 90px;
+  border-radius: 8px;
+  cursor: pointer;
+  border: 1px solid #e5e7eb;
+}
+
+.comment-image-thumb:hover {
+  border-color: #3b82f6;
+}
+
+.detail-attachment-list {
+  display: grid;
+  gap: 8px;
+  max-height: 280px;
+  overflow-y: auto;
+  padding: 4px;
+  border-radius: 8px;
 }
 
 .detail-attachment-list .el-button,
@@ -717,12 +965,41 @@ onBeforeUnmount(() => {
   border: 1px solid #e5e7eb;
 }
 
+.attachment-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+}
+
+.attachment-icon {
+  font-size: 28px;
+  color: #667085;
+  flex-shrink: 0;
+}
+
+.attachment-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  color: #344054;
+}
+
 .comment-attachments,
 .pending-attachments {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
   gap: 8px;
   margin-top: 8px;
+  max-height: 280px;
+  overflow-y: auto;
+  padding: 4px;
+  border-radius: 8px;
 }
 
 .pending-attachments span {
@@ -877,6 +1154,9 @@ onBeforeUnmount(() => {
   .detail-layout {
     grid-template-columns: 1fr;
   }
+  .info-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
 }
 
 @media (max-width: 720px) {
@@ -884,5 +1164,15 @@ onBeforeUnmount(() => {
   .state-form {
     grid-template-columns: 1fr;
   }
+  .info-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.desc-preview-img {
+  max-width: 90vw;
+  max-height: 85vh;
+  object-fit: contain;
+  border-radius: 8px;
 }
 </style>

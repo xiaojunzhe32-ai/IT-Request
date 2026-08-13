@@ -1,6 +1,6 @@
 <template>
   <div class="admin-page">
-    <PageHeader eyebrow="Admin Console" title="Permissions" description="Permission reference for request workflow, organization management and audit access." />
+    <PageHeader v-if="!embedded" eyebrow="Admin Console" title="Permissions" description="Permission reference for request workflow, team management and audit access." />
     <div v-loading="loading" class="permission-grid">
       <el-card v-for="group in groupedPermissions" :key="group.name" class="permission-card" shadow="never">
         <template #header><div class="card-title-row"><div><strong>{{ group.name }}</strong><span>{{ group.items.length }} permission codes</span></div></div></template>
@@ -14,6 +14,8 @@
 import { computed, onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import PageHeader from '@/components/PageHeader.vue'
+
+defineProps<{ embedded?: boolean }>()
 import { roleApi } from '@/api/system'
 
 const permissions = ref<string[]>([])

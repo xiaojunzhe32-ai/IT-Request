@@ -63,11 +63,9 @@ export interface WorkflowRequest {
   status: RequestStatus
   origin?: string
   requester: string
-  requesterOrg: string
   assignedTeam: string
   assignee: string
   tester: string
-  organizationId?: number
   callerId?: number
   agentId?: number
   teamId?: number
@@ -96,7 +94,6 @@ export interface CreateRequestPayload {
   type: string
   affectedService: string
   priority: RequestPriority
-  organizationId: number
   occurrenceTime?: string
   requestedResolutionTime?: string
   origin?: string
@@ -114,7 +111,6 @@ export interface ListRequestsParams {
   type?: string
   teamId?: number
   priority?: RequestPriority | string
-  orgId?: number
   search?: string
   assigneeId?: number
   callerId?: number

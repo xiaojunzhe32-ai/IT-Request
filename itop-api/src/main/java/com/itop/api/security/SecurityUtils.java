@@ -2,9 +2,11 @@ package com.itop.api.security;
 
 import com.itop.core.entity.Organization;
 import com.itop.core.entity.Role;
+import com.itop.core.entity.Team;
 import com.itop.core.entity.User;
 import com.itop.core.entity.UserAccessibleOrg;
 import com.itop.core.repository.OrganizationRepository;
+import com.itop.core.repository.TeamRepository;
 import com.itop.core.repository.UserAccessibleOrgRepository;
 import com.itop.core.repository.UserRepository;
 import org.springframework.security.core.Authentication;
@@ -34,17 +36,21 @@ public class SecurityUtils {
 
     public static final String ALL_PERMISSIONS = "ALL_PERMISSIONS";
     public static final String ROLE_PREFIX = "ROLE_";
+    public static final String ITMD_TEAM_CODE = "ITMD";
 
     private final UserRepository userRepository;
     private final UserAccessibleOrgRepository userAccessibleOrgRepository;
     private final OrganizationRepository organizationRepository;
+    private final TeamRepository teamRepository;
 
     public SecurityUtils(UserRepository userRepository,
                          UserAccessibleOrgRepository userAccessibleOrgRepository,
-                         OrganizationRepository organizationRepository) {
+                         OrganizationRepository organizationRepository,
+                         TeamRepository teamRepository) {
         this.userRepository = userRepository;
         this.userAccessibleOrgRepository = userAccessibleOrgRepository;
         this.organizationRepository = organizationRepository;
+        this.teamRepository = teamRepository;
     }
 
     // ------------------------------------------------------------------
@@ -125,17 +131,13 @@ public class SecurityUtils {
         return hasRole("TECHNICIAN");
     }
 
-    public boolean isTester() {
-        return hasRole("TESTER");
-    }
-
     public boolean isTeamLead() {
         return hasRole("TEAM_LEAD");
     }
 
-    /** IT staff: Technician, Tester, Team Lead, or Admin */
+    /** IT staff: Technician, Team Lead, or Admin */
     public boolean isITStaff() {
-        return isTechnician() || isTester() || isTeamLead() || isAdmin();
+        return isTechnician() || isTeamLead() || isAdmin();
     }
 
     // ------------------------------------------------------------------
@@ -242,5 +244,82 @@ public class SecurityUtils {
             }
         }
         return descendants;
+    }
+
+    // ------------------------------------------------------------------
+    // 数据隔离：团队工单可见性
+    // ------------------------------------------------------------------
+
+    /**
+     * 获取当前用户所属的所有团队 ID（作为成员或负责人）。
+     * 一个用户可以属于多个团队。
+     */
+    public Set<Long> getCurrentUserTeamIds() {
+        User user = getCurrentUser();
+        if (user == null) {
+            return Collections.emptySet();
+        }
+        List<Team> teams = teamRepository
+                .findDistinctByMemberUsersIdOrLeaderUserId(user.getId(), user.getId());
+        return teams.stream().map(Team::getId).collect(Collectors.toCollection(LinkedHashSet::new));
+    }
+
+    /**
+     * 判断当前用户是否属于 ITMD 团队（可见全部工单）。
+     */
+    public boolean isITMDTeam() {
+        Set<Long> teamIds = getCurrentUserTeamIds();
+        if (teamIds.isEmpty()) {
+            return false;
+        }
+        return teamRepository.findAllById(teamIds).stream()
+                .anyMatch(t -> ITMD_TEAM_CODE.equals(t.getTeamCode()));
+    }
+
+    /**
+     * 判断当前用户是否能访问指定团队的工单。
+     * - Admin：可见全部
+     * - ITMD 团队成员：可见全部
+     * - 其他用户：仅可见自己所属团队
+     *
+     * @param targetTeamId 工单所属团队 ID（null 视为无团队，仅 Admin/ITMD 可访问）
+     */
+    public boolean canAccessTeamTickets(Long targetTeamId) {
+        if (isAdmin()) return true;
+        if (isITMDTeam()) return true;
+        if (targetTeamId == null) return false;
+        Set<Long> myTeamIds = getCurrentUserTeamIds();
+        return myTeamIds.contains(targetTeamId);
+    }
+
+    /**
+     * 判断当前用户是否能访问指定工单（基于团队 + 提单人）。
+     * - Admin / ITMD：可见全部
+     * - 其他用户：工单所属团队 ∈ 自己的团队，或工单提单人 ∈ 自己团队的成员
+     *
+     * @param teamId   工单所属团队 ID
+     * @param callerId 工单提单人 ID
+     */
+    public boolean canAccessTicket(Long teamId, Long callerId) {
+        if (isAdmin()) return true;
+        if (isITMDTeam()) return true;
+        Set<Long> myTeamIds = getCurrentUserTeamIds();
+        if (teamId != null && myTeamIds.contains(teamId)) return true;
+        if (callerId != null && !myTeamIds.isEmpty()) {
+            Set<Long> memberIds = teamRepository.findMemberUserIdsByTeamIdIn(myTeamIds);
+            return memberIds.contains(callerId);
+        }
+        return false;
+    }
+
+    /**
+     * 获取当前用户可访问的工单团队 ID 集合。
+     * - 返回 null 表示不做团队过滤（Admin 或 ITMD 团队，可见全部）
+     * - 返回非空 Set 表示仅可见这些团队的工单
+     */
+    public Set<Long> getAccessibleTeamIds() {
+        if (isAdmin()) return null;
+        if (isITMDTeam()) return null;
+        return getCurrentUserTeamIds();
     }
 }

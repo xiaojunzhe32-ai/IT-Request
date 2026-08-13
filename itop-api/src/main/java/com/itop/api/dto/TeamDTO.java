@@ -21,6 +21,8 @@ public class TeamDTO {
     private String teamType;
     private Long leaderId;
     private String leaderName;
+    private List<Long> leaderIds;
+    private List<String> leaderNames;
     private List<Long> memberIds;
     private List<String> memberNames;
     private String email;

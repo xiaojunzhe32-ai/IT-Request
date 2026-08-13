@@ -1,6 +1,13 @@
 ﻿<template>
   <div class="admin-page">
-    <PageHeader eyebrow="Admin Console" title="Requests" description="Global request control view for admins and technical leads." />
+    <PageHeader eyebrow="Admin Console" title="Requests" description="Global request control view for admins and technical leads.">
+      <template #actions>
+        <el-button type="primary" @click="router.push('/portal/new-request')">
+          <el-icon><Plus /></el-icon>
+          New Request
+        </el-button>
+      </template>
+    </PageHeader>
     <el-card v-loading="loading" class="surface-card" shadow="never">
       <div class="toolbar-row">
         <el-input v-model="keyword" placeholder="Search request number, title or requester" clearable>
@@ -20,8 +27,9 @@
 
 <script setup lang="ts">
 import { onMounted, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { Search } from '@element-plus/icons-vue'
+import { Plus, Search } from '@element-plus/icons-vue'
 import PageHeader from '@/components/PageHeader.vue'
 import RequestTable from '@/components/RequestTable.vue'
 import { requestApi } from '@/api/requests'
@@ -30,6 +38,7 @@ import { requestStatuses } from '@/data/requestOptions'
 import type { RequestStatus, WorkflowRequest } from '@/types/requests'
 import type { Team } from '@/types/system'
 
+const router = useRouter()
 const keyword = ref('')
 const statusFilter = ref<RequestStatus | ''>('')
 const teamFilter = ref<number | ''>('')

@@ -8,8 +8,6 @@ interface User {
   email?: string
   firstName?: string
   lastName?: string
-  organizationId?: number
-  organizationName?: string
   roles?: string[]
   permissions?: string[]
   globalAccess?: boolean
@@ -27,12 +25,6 @@ export const useUserStore = defineStore('user', () => {
     localStorage.setItem('username', userData.username)
     localStorage.setItem('userRoles', JSON.stringify(userData.roles || []))
     localStorage.setItem('userPermissions', JSON.stringify(userData.permissions || []))
-    if (userData.organizationId) {
-      localStorage.setItem('organizationId', String(userData.organizationId))
-    }
-    if (userData.organizationName) {
-      localStorage.setItem('organizationName', userData.organizationName)
-    }
   }
 
   const setToken = (newToken: string) => {
@@ -48,8 +40,6 @@ export const useUserStore = defineStore('user', () => {
     localStorage.removeItem('userId')
     localStorage.removeItem('userRoles')
     localStorage.removeItem('userPermissions')
-    localStorage.removeItem('organizationId')
-    localStorage.removeItem('organizationName')
   }
 
   const loadUserFromStorage = () => {
@@ -59,8 +49,6 @@ export const useUserStore = defineStore('user', () => {
       user.value = {
         id: Number(userId),
         username: username,
-        organizationId: Number(localStorage.getItem('organizationId')) || undefined,
-        organizationName: localStorage.getItem('organizationName') || undefined,
         roles: JSON.parse(localStorage.getItem('userRoles') || '[]'),
         permissions: JSON.parse(localStorage.getItem('userPermissions') || '[]')
       }
@@ -77,8 +65,6 @@ export const useUserStore = defineStore('user', () => {
           email: res.email,
           firstName: res.firstName,
           lastName: res.lastName,
-          organizationId: res.organizationId,
-          organizationName: res.organizationName,
           roles: res.roles || [],
           permissions: res.permissions || [],
           globalAccess: res.globalAccess

@@ -2,7 +2,7 @@
   <div class="user-portal-layout">
     <header class="portal-header">
       <div class="brand-row">
-        <BrandLogo subtitle="User request workspace" />
+        <BrandLogo />
       </div>
 
       <nav class="portal-nav">

@@ -10,25 +10,15 @@ ARG HTTPS_PROXY=
 ENV HTTP_PROXY=${HTTP_PROXY} \
     HTTPS_PROXY=${HTTPS_PROXY}
 
-# Generate Maven settings.xml with proxy config only when HTTP_PROXY is provided
+# Generate Maven settings.xml with Aliyun mirror (China-friendly)
 RUN mkdir -p /root/.m2 && \
-    if [ -n "$HTTP_PROXY" ]; then \
-      PROXY_HOST=$(echo "$HTTP_PROXY" | sed -n 's|^https\?://||p' | cut -d: -f1); \
-      PROXY_PORT=$(echo "$HTTP_PROXY" | sed -n 's|^https\?://||p' | cut -d: -f2); \
-      echo "<settings xmlns=\"http://maven.apache.org/SETTINGS/1.0.0\" \
-            xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" \
-            xsi:schemaLocation=\"http://maven.apache.org/SETTINGS/1.0.0 http://maven.apache.org/xsd/settings-1.0.0.xsd\"> \
-              <proxies> \
-                <proxy><id>http-proxy</id><active>true</active><protocol>http</protocol><host>${PROXY_HOST}</host><port>${PROXY_PORT}</port></proxy> \
-                <proxy><id>https-proxy</id><active>true</active><protocol>https</protocol><host>${PROXY_HOST}</host><port>${PROXY_PORT}</port></proxy> \
-              </proxies> \
-            </settings>" > /root/.m2/settings.xml; \
-    else \
-      echo '<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0" \
-            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" \
-            xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 http://maven.apache.org/xsd/settings-1.0.0.xsd"> \
-            </settings>' > /root/.m2/settings.xml; \
-    fi
+    echo '<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0" \
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" \
+          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 http://maven.apache.org/xsd/settings-1.0.0.xsd"> \
+            <mirrors> \
+              <mirror><id>aliyun</id><name>Aliyun Mirror</name><url>https://maven.aliyun.com/repository/public</url><mirrorOf>central</mirrorOf></mirror> \
+            </mirrors> \
+          </settings>' > /root/.m2/settings.xml
 
 # Copy pom files first (better layer caching)
 COPY pom.xml .
@@ -38,17 +28,14 @@ COPY itop-cmdb/pom.xml itop-cmdb/
 COPY itop-api/pom.xml itop-api/
 COPY itop-web/pom.xml itop-web/
 
-# Download dependencies with cache mount (faster rebuilds)
-RUN --mount=type=cache,target=/root/.m2/repository \
-    mvn dependency:go-offline -B -s /root/.m2/settings.xml
-
-# Copy source code
+# Copy source code (CACHEBUST forces rebuild when code changes)
+ARG CACHEBUST=1
 COPY itop-common/src itop-common/src
 COPY itop-core/src itop-core/src
 COPY itop-cmdb/src itop-cmdb/src
 COPY itop-api/src itop-api/src
 
-# Build application with cache mount
+# Build application with cache mount (downloads deps + builds in one step)
 RUN --mount=type=cache,target=/root/.m2/repository \
     mvn clean package -DskipTests -pl '!itop-web' -B -s /root/.m2/settings.xml
 
@@ -59,11 +46,8 @@ LABEL maintainer="iTop Java Team"
 LABEL version="1.0.0"
 LABEL description="iTop Java CMDB API Server"
 
-# Install necessary packages
-RUN apk add --no-cache curl tzdata && \
-    cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && \
-    echo "Asia/Shanghai" > /etc/timezone && \
-    apk del tzdata
+# Set timezone (no package install needed)
+ENV TZ=Asia/Shanghai
 
 # Create non-root user
 RUN addgroup -S itop && adduser -S itop -G itop
@@ -82,9 +66,9 @@ USER itop
 # Expose port
 EXPOSE 8080
 
-# Health check
+# Health check (wget is built into Alpine)
 HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
-  CMD curl -f http://localhost:8080/api/actuator/health || exit 1
+  CMD wget -q --spider http://localhost:8080/api/actuator/health || exit 1
 
 # JVM options
 ENV JAVA_OPTS="-Xms512m -Xmx1024m -XX:+UseG1GC -XX:MaxGCPauseMillis=200"

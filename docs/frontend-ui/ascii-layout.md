@@ -5,7 +5,7 @@
 - Authentication: Login
 - Requester Portal: Home, New Request, All Requests, Ongoing Requests, Closed Requests, Request Detail
 - IT Workspace: Workload Overview, Team Queue, My Tasks, Test Queue, Assignment, Request Detail
-- Admin Console: Dashboard, Requests, Organizations, Users, Roles, Permissions, Teams, Routing Rules, Audit Logs
+- Admin Console: Dashboard, Requests, Users, Roles, Permissions, Teams, Routing Rules, Audit Logs
 - Shared overlays: filter toolbar, assignment drawer/dialog, transition dialog, comment composer, create/edit Admin dialog, row action menu
 
 ## State Model

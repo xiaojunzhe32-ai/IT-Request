@@ -16,14 +16,13 @@
           v-for="request in column.items"
           :key="request.id"
           class="task-card"
-          @click="router.push(`/workspace/requests/${request.id}`)"
         >
           <div class="task-card__top">
-            <strong>{{ request.requestNo }}</strong>
+            <a class="task-no-link" @click="router.push(`/workspace/requests/${request.id}`)">{{ request.requestNo }}</a>
             <PriorityTag :priority="request.priority" />
           </div>
           <h3>{{ request.title }}</h3>
-          <p>{{ request.requester }} · {{ request.requesterOrg }}</p>
+          <p>{{ request.requester }} · {{ request.assignedTeam || 'Unassigned team' }}</p>
           <RequestStatusTag :status="request.status" />
         </article>
         <div v-if="!column.items.length" class="empty-column">No requests</div>
@@ -156,12 +155,12 @@ onMounted(loadTasks)
   border-radius: 10px;
   background: #f8fafc;
   border: 1px solid #e5e7eb;
-  cursor: pointer;
+  cursor: default;
 }
 
 .task-card:hover {
-  border-color: #7aa2ff;
-  background: #fff;
+  border-color: #e5e7eb;
+  background: #f8fafc;
 }
 
 .task-card__top {
@@ -170,9 +169,20 @@ onMounted(loadTasks)
   gap: 10px;
 }
 
-.task-card__top strong,
+.task-card__top .task-no-link,
 .task-card h3 {
   color: #111827;
+}
+
+.task-no-link {
+  font-weight: 600;
+  cursor: pointer;
+  color: #2563eb;
+}
+
+.task-no-link:hover {
+  color: #1d4ed8;
+  text-decoration: underline;
 }
 
 .task-card h3 {

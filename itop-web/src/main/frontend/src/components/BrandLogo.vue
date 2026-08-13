@@ -22,12 +22,12 @@ defineProps<{
 }
 
 .brand-logo__plate {
-  width: 190px;
-  height: 44px;
+  width: 260px;
+  height: 60px;
   display: flex;
   align-items: center;
-  padding: 7px 12px;
-  border-radius: 12px;
+  padding: 10px 16px;
+  border-radius: 14px;
   background: #fff;
   border: 1px solid rgba(255, 255, 255, 0.18);
   box-shadow: 0 10px 24px rgba(0, 0, 128, 0.16);

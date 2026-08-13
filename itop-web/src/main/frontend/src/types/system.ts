@@ -3,12 +3,12 @@ import type { PageResponse } from '@/types/requests'
 export interface Team {
   id: number
   name: string
-  organizationId?: number
-  organizationName?: string
   teamCode?: string
   teamType?: string
   leaderId?: number
   leaderName?: string
+  leaderIds?: number[]
+  leaderNames?: string[]
   memberIds?: number[]
   memberNames?: string[]
   email?: string
@@ -24,8 +24,6 @@ export interface SystemUser {
   email: string
   firstName?: string
   lastName?: string
-  organizationId?: number
-  organizationName?: string
   firstName?: string
   lastName?: string
   phone?: string
@@ -35,6 +33,7 @@ export interface SystemUser {
   failedLogins?: number
   roleIds?: number[]
   roleCodes?: string[]
+  admin?: boolean
   teamNames?: string[]
   createdAt?: string
   updatedAt?: string
@@ -57,8 +56,7 @@ export interface RoutingRule {
   id: number
   name: string
   description?: string
-  organizationId?: number
-  organizationName?: string
+  affectedService?: string
   requestType?: string
   priority?: string
   teamId?: number
@@ -66,6 +64,20 @@ export interface RoutingRule {
   enabled?: boolean
   sortOrder?: number
   isFallback?: boolean
+}
+
+export type CodeTableCode = 'REQUEST_TYPE' | 'AFFECTED_SERVICE'
+
+export interface CodeTableItem {
+  id: number
+  tableCode: CodeTableCode | string
+  code: string
+  name: string
+  status?: string
+  description?: string
+  sortOrder?: number
+  createdAt?: string
+  updatedAt?: string
 }
 
 export interface AuditLog {
@@ -84,7 +96,6 @@ export interface AuditLog {
 }
 
 export interface DashboardStats {
-  totalOrgs?: number
   activeUsers?: number
   activeTeams?: number
   enabledRoutingRules?: number

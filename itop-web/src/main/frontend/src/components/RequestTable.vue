@@ -6,9 +6,12 @@
       :empty-text="emptyText"
       row-key="id"
       highlight-current-row
-      @row-click="openRequest"
     >
-      <el-table-column prop="requestNo" label="Request No." width="170" sortable show-overflow-tooltip />
+      <el-table-column prop="requestNo" label="Request No." width="170" sortable show-overflow-tooltip>
+        <template #default="{ row }">
+          <a class="request-no-link" @click="openRequest(row)">{{ row.requestNo }}</a>
+        </template>
+      </el-table-column>
       <el-table-column label="Title" min-width="280" show-overflow-tooltip>
         <template #default="{ row }">
           <div class="request-title-cell">
@@ -16,7 +19,9 @@
           </div>
         </template>
       </el-table-column>
-      <el-table-column prop="type" label="Type" width="150" show-overflow-tooltip />
+      <el-table-column label="Type" width="150" show-overflow-tooltip>
+        <template #default="{ row }">{{ requestTypeLabel(row.type) }}</template>
+      </el-table-column>
       <el-table-column prop="priority" label="Priority" width="110">
         <template #default="{ row }">
           <PriorityTag :priority="row.priority" />
@@ -59,6 +64,7 @@
 </template>
 
 <script setup lang="ts">
+import { onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { MoreFilled } from '@element-plus/icons-vue'
@@ -66,6 +72,7 @@ import type { WorkflowRequest } from '@/types/requests'
 import PriorityTag from '@/components/PriorityTag.vue'
 import RequestStatusTag from '@/components/RequestStatusTag.vue'
 import { formatDateTime } from '@/utils/format'
+import { useCodeTableStore } from '@/stores/codeTables'
 
 const props = withDefaults(defineProps<{
   requests: WorkflowRequest[]
@@ -80,6 +87,9 @@ const props = withDefaults(defineProps<{
 })
 
 const router = useRouter()
+const codeTableStore = useCodeTableStore()
+
+const requestTypeLabel = (value?: string) => codeTableStore.labelFor('REQUEST_TYPE', value, value || '-')
 
 const openRequest = (row: WorkflowRequest) => {
   router.push(`${props.detailBase}/${row.id}`)
@@ -92,6 +102,10 @@ const handleCommand = (command: string, row: WorkflowRequest) => {
   }
   ElMessage.info(`${command === 'assign' ? 'Assignment' : 'Comment'} action is available in the detail view.`)
 }
+
+onMounted(() => {
+  codeTableStore.loadTable('REQUEST_TYPE').catch(() => undefined)
+})
 </script>
 
 <style scoped lang="scss">
@@ -116,6 +130,17 @@ const handleCommand = (command: string, row: WorkflowRequest) => {
 
 .muted {
   color: #98a2b3;
+}
+
+.request-no-link {
+  color: #2563eb;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.request-no-link:hover {
+  color: #1d4ed8;
+  text-decoration: underline;
 }
 
 .row-action-button {

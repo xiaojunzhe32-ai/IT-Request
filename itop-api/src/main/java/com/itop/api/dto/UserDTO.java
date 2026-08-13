@@ -41,7 +41,6 @@ public class UserDTO {
     @Size(max = 50)
     private String phone;
 
-    @NotNull(message = "Organization is required")
     private Long organizationId;
     private String organizationName;
 
@@ -58,10 +57,10 @@ public class UserDTO {
     private Boolean locked;
     private Integer failedLogins;
 
-    @NotNull(message = "Roles are required")
-    @Size(min = 1, message = "At least one role is required")
-    private List<Long> roleIds;
+    /** Admin 开关 — true 时赋予 ADMIN 角色，false 时移除。其他角色由团队分配自动派生。 */
+    private Boolean admin;
 
+    private List<Long> roleIds;
     private List<String> roleCodes;
     private List<String> teamNames;
     private LocalDateTime createdAt;

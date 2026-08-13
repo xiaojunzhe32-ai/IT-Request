@@ -1,10 +1,8 @@
 package com.itop.api.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.itop.api.dto.UserDTO;
 import com.itop.api.security.SecurityUtils;
 import com.itop.common.dto.ApiResponse;
-import com.itop.core.entity.Role;
 import com.itop.core.entity.User;
 import com.itop.core.repository.OrganizationRepository;
 import com.itop.core.repository.RoleRepository;
@@ -44,8 +42,7 @@ class UserControllerTest {
                 roleRepository,
                 teamRepository,
                 passwordEncoder,
-                securityUtils,
-                new ObjectMapper()
+                securityUtils
         );
         lenient().when(securityUtils.getAccessibleOrgIds()).thenReturn(null);
     }
@@ -85,13 +82,9 @@ class UserControllerTest {
 
     @Test
     void nonAdminCannotAssignAdminRole() {
-        Role adminRole = new Role("Administrator", "ADMIN");
-        adminRole.setId(1L);
-        adminRole.setPermissions("[\"*\"]");
         when(userRepository.existsByUsername("new-user")).thenReturn(false);
         when(userRepository.existsByEmail("new@example.com")).thenReturn(false);
         when(organizationRepository.existsById(100L)).thenReturn(true);
-        when(roleRepository.findAllById(any())).thenReturn(List.of(adminRole));
         when(securityUtils.isAdmin()).thenReturn(false);
 
         UserDTO dto = UserDTO.builder()
@@ -100,13 +93,13 @@ class UserControllerTest {
                 .organizationId(100L)
                 .authMethod("LOCAL")
                 .password("secret123")
-                .roleIds(List.of(1L))
+                .admin(true)
                 .build();
         ResponseEntity<ApiResponse<UserDTO>> response = controller.create(dto);
 
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().isSuccess()).isFalse();
-        assertThat(response.getBody().getMessage()).contains("cannot assign role ADMIN");
+        assertThat(response.getBody().getMessage()).contains("Only admins can grant admin access");
         verify(userRepository, never()).save(any());
     }
 

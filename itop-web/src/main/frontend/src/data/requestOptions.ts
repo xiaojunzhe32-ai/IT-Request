@@ -10,15 +10,6 @@ export const requestStatuses: RequestStatus[] = [
   'Closed'
 ]
 
-export const requestTypes = [
-  'Account Access',
-  'Application Issue',
-  'Network Issue',
-  'Hardware Issue',
-  'Data Correction',
-  'Other'
-]
-
 export const priorityOptions: RequestPriority[] = ['Low', 'Medium', 'High', 'Critical']
 
 export const statusColorMap: Record<RequestStatus, string> = {

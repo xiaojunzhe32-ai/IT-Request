@@ -21,34 +21,28 @@
               </el-form-item>
 
               <el-form-item label="Request Type" prop="type">
-                <el-select v-model="form.type" placeholder="Select type">
-                  <el-option v-for="type in requestTypes" :key="type" :label="type" :value="type" />
-                </el-select>
-              </el-form-item>
-
-              <el-form-item label="Affected Service / System" prop="affectedService">
-                <el-select v-model="form.affectedService" filterable placeholder="Select affected service">
+                <el-select v-model="form.type" :loading="codeTableStore.loading.REQUEST_TYPE" placeholder="Select type">
                   <el-option
-                    v-for="service in affectedServiceOptions"
-                    :key="service"
-                    :label="service"
-                    :value="service"
+                    v-for="type in requestTypeOptions"
+                    :key="type.code"
+                    :label="type.name"
+                    :value="type.code"
                   />
                 </el-select>
               </el-form-item>
 
-              <el-form-item label="Organization" prop="organizationId">
+              <el-form-item label="Affected Service / System" prop="affectedService">
                 <el-select
-                  v-model="form.organizationId"
-                  :loading="orgLoading"
+                  v-model="form.affectedService"
+                  :loading="codeTableStore.loading.AFFECTED_SERVICE"
                   filterable
-                  placeholder="Select organization"
+                  placeholder="Select affected service"
                 >
                   <el-option
-                    v-for="org in organizationOptions"
-                    :key="org.id"
-                    :label="org.name"
-                    :value="org.id"
+                    v-for="service in affectedServiceOptions"
+                    :key="service.code"
+                    :label="service.name"
+                    :value="service.code"
                   />
                 </el-select>
               </el-form-item>
@@ -62,6 +56,17 @@
                     :value="priority"
                   />
                 </el-radio-group>
+              </el-form-item>
+
+              <el-form-item label="Assign to IT Team" prop="teamId">
+                <el-select v-model="form.teamId" filterable placeholder="Select IT team">
+                  <el-option
+                    v-for="team in itTeams"
+                    :key="team.id"
+                    :label="team.name"
+                    :value="team.id"
+                  />
+                </el-select>
               </el-form-item>
 
               <el-form-item label="Occurrence Time" prop="occurrenceTime">
@@ -126,6 +131,7 @@
                 class="file-input"
                 type="file"
                 multiple
+                :accept="ACCEPT_ATTR"
                 @change="handleFileInput"
               >
               <el-icon><UploadFilled /></el-icon>
@@ -164,7 +170,7 @@
             <div class="card-title-row">
               <div>
                 <strong>Request Summary</strong>
-                <span>Lightweight routing preview</span>
+                <span>Default target team preview</span>
               </div>
             </div>
           </template>
@@ -172,11 +178,11 @@
           <div class="summary-list">
             <div>
               <span>Type</span>
-              <strong>{{ form.type }}</strong>
+              <strong>{{ selectedRequestTypeLabel || 'Not selected' }}</strong>
             </div>
             <div>
               <span>Service</span>
-              <strong>{{ form.affectedService || 'Not selected' }}</strong>
+              <strong>{{ selectedAffectedServiceLabel || 'Not selected' }}</strong>
             </div>
             <div>
               <span>Suggested Team</span>
@@ -199,38 +205,31 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, reactive, ref } from 'vue'
+import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import { Document, Plus, UploadFilled } from '@element-plus/icons-vue'
 import PageHeader from '@/components/PageHeader.vue'
-import { organizationApi } from '@/api/cmdb'
 import { requestApi } from '@/api/requests'
 import { attachmentApi } from '@/api/attachments'
-import { priorityOptions, requestTypes, sanitizeRequestHtml } from '@/data/requestOptions'
-import type { Organization } from '@/types/cmdb'
+import { teamApi, routingRuleApi } from '@/api/system'
+import type { Team } from '@/types/system'
+import { priorityOptions, sanitizeRequestHtml } from '@/data/requestOptions'
+import { validateFile, validateBatch, ACCEPT_ATTR } from '@/utils/uploadValidation'
+import { useCodeTableStore } from '@/stores/codeTables'
 import type { RequestAttachment, RequestPriority } from '@/types/requests'
 
 const router = useRouter()
+const codeTableStore = useCodeTableStore()
 const formRef = ref<FormInstance>()
 const editorRef = ref<HTMLElement>()
 const fileInputRef = ref<HTMLInputElement>()
 const inlineImageCount = ref(0)
-const orgLoading = ref(false)
 const submitting = ref(false)
-const organizationOptions = ref<Organization[]>([])
-const affectedServiceOptions = [
-  'ERP',
-  'Email',
-  'Network',
-  'CRM',
-  'VPN',
-  'Printer',
-  'Finance System',
-  'HR System',
-  'Other'
-]
+const itTeams = ref<Team[]>([])
+const requestTypeOptions = computed(() => codeTableStore.itemsFor('REQUEST_TYPE'))
+const affectedServiceOptions = computed(() => codeTableStore.itemsFor('AFFECTED_SERVICE'))
 
 interface RequestDraftAttachment extends RequestAttachment {
   file?: File
@@ -238,10 +237,10 @@ interface RequestDraftAttachment extends RequestAttachment {
 
 const form = reactive({
   title: '',
-  type: 'Application Issue',
+  type: '',
   affectedService: '',
   priority: 'Medium' as RequestPriority,
-  organizationId: undefined as number | undefined,
+  teamId: undefined as number | undefined,
   occurrenceTime: '',
   requestedResolutionTime: '',
   description: '',
@@ -253,22 +252,48 @@ const rules: FormRules = {
   title: [{ required: true, message: 'Please enter request title', trigger: 'blur' }],
   type: [{ required: true, message: 'Please select request type', trigger: 'change' }],
   affectedService: [{ required: true, message: 'Please select affected service', trigger: 'change' }],
-  organizationId: [{ required: true, message: 'Please select organization', trigger: 'change' }],
   description: [{ required: true, message: 'Please enter description', trigger: 'blur' }]
 }
 
 const routingPreview = computed(() => {
-  if (form.type === 'Network Issue' || ['Network', 'VPN'].includes(form.affectedService)) {
-    return { team: 'Network Operations' }
-  }
-  if (form.type === 'Hardware Issue' || form.affectedService === 'Printer') {
-    return { team: 'System Operations' }
-  }
-  if (form.type === 'Account Access') {
-    return { team: 'System Operations' }
-  }
-  return { team: 'Application Operations' }
+  const selected = itTeams.value.find((t) => t.id === form.teamId)
+  return { team: selected?.name || suggestedTeamName.value || 'Auto-routed' }
 })
+
+const suggestedTeamName = ref('')
+const autoSuggesting = ref(false)
+
+const autoSuggestTeam = async () => {
+  if (!form.affectedService && !form.type) {
+    suggestedTeamName.value = ''
+    return
+  }
+  autoSuggesting.value = true
+  try {
+    const result = await routingRuleApi.suggest({
+      requestType: form.type || undefined,
+      priority: form.priority || undefined,
+      affectedService: form.affectedService || undefined,
+    })
+    if (result && result.teamId) {
+      form.teamId = result.teamId
+      suggestedTeamName.value = result.teamName || ''
+    } else {
+      suggestedTeamName.value = ''
+    }
+  } catch {
+    suggestedTeamName.value = ''
+  } finally {
+    autoSuggesting.value = false
+  }
+}
+
+watch(() => form.affectedService, autoSuggestTeam)
+watch(() => form.type, autoSuggestTeam)
+watch(() => form.priority, autoSuggestTeam)
+
+const selectedRequestTypeLabel = computed(() => codeTableStore.labelFor('REQUEST_TYPE', form.type))
+const selectedAffectedServiceLabel = computed(() => codeTableStore.labelFor('AFFECTED_SERVICE', form.affectedService))
 
 const evidenceSummary = computed(() => {
   const items = []
@@ -317,6 +342,11 @@ const handleEditorPaste = (event: ClipboardEvent) => {
 
   event.preventDefault()
   imageFiles.forEach((file) => {
+    const result = validateFile(file)
+    if (!result.valid) {
+      ElMessage.warning(result.error)
+      return
+    }
     const attachmentId = Date.now() + Math.random()
     form.attachments.push({
       id: attachmentId,
@@ -334,7 +364,23 @@ const handleEditorPaste = (event: ClipboardEvent) => {
 }
 
 const addAttachments = (files: File[]) => {
-  files.forEach((file) => {
+  const validFiles: File[] = []
+  for (const file of files) {
+    const result = validateFile(file)
+    if (result.valid) {
+      validFiles.push(file)
+    } else {
+      ElMessage.warning(result.error)
+    }
+  }
+  if (!validFiles.length) return
+  const existingFiles = form.attachments.map((a) => a.file).filter(Boolean) as File[]
+  const batchResult = validateBatch([...existingFiles, ...validFiles])
+  if (!batchResult.valid) {
+    ElMessage.warning(batchResult.error)
+    return
+  }
+  validFiles.forEach((file) => {
     form.attachments.push({
       id: Date.now() + Math.random(),
       originalName: file.name,
@@ -360,21 +406,29 @@ const removeAttachment = (id: number) => {
   if (index >= 0) form.attachments.splice(index, 1)
 }
 
-const loadOrganizations = async () => {
-  orgLoading.value = true
+const loadCodeTables = async () => {
   try {
-    const response = await organizationApi.getList({ page: 0, size: 100, sort: 'name' })
-    organizationOptions.value = response.content.filter((org) => org.status?.toUpperCase() === 'ACTIVE')
-    const storedOrgId = Number(localStorage.getItem('organizationId'))
-    if (storedOrgId && organizationOptions.value.some((org) => org.id === storedOrgId)) {
-      form.organizationId = storedOrgId
-    } else {
-      form.organizationId = organizationOptions.value[0]?.id
+    await codeTableStore.ensureTables('REQUEST_TYPE', 'AFFECTED_SERVICE')
+    if (!form.type) {
+      form.type = requestTypeOptions.value.find((type) => type.code === 'APPLICATION_ISSUE')?.code
+        || requestTypeOptions.value[0]?.code
+        || ''
     }
-  } catch (error) {
-    ElMessage.error('Unable to load organizations')
-  } finally {
-    orgLoading.value = false
+  } catch {
+    ElMessage.error('Unable to load request form options')
+  }
+}
+
+const loadITTeams = async () => {
+  try {
+    const page = await teamApi.list({ page: 0, size: 100, type: 'IT_TEAM' })
+    itTeams.value = page.content
+    // Auto-select if only one IT team
+    if (itTeams.value.length === 1) {
+      form.teamId = itTeams.value[0].id
+    }
+  } catch {
+    // Non-critical: form still works without team selection
   }
 }
 
@@ -389,7 +443,6 @@ const submitRequest = async () => {
   syncDescription()
   await formRef.value.validate(async (valid) => {
     if (!valid) return
-    if (!form.organizationId) return
     submitting.value = true
     try {
       const draftHtml = sanitizeRequestHtml(form.descriptionHtml)
@@ -401,7 +454,7 @@ const submitRequest = async () => {
         type: form.type,
         affectedService: form.affectedService,
         priority: form.priority,
-        organizationId: form.organizationId,
+        teamId: form.teamId || undefined,
         occurrenceTime: form.occurrenceTime || undefined,
         requestedResolutionTime: form.requestedResolutionTime || undefined,
         origin: 'portal'
@@ -429,7 +482,10 @@ const submitRequest = async () => {
   })
 }
 
-onMounted(loadOrganizations)
+onMounted(() => {
+  loadCodeTables()
+  loadITTeams()
+})
 </script>
 
 <style scoped lang="scss">
