@@ -35,3 +35,8 @@ __pycache__/
 
 # cloned ponytail repo (install separately)
 ponytail/
+
+# docker/build artifacts - never commit tar archives
+*.tar
+*.tar.gz
+*.tar.bz2
