@@ -80,52 +80,89 @@
           </div>
         </el-card>
 
-        <el-card class="surface-card" shadow="never">
+        <el-card class="surface-card request-details-card" shadow="never">
           <template #header>
             <div class="card-title-row">
               <div>
-                <strong>Request Information</strong>
-                <span>Requester-submitted details and ownership</span>
+                <strong>Request Details</strong>
+                <span>Summary, ownership and assignment</span>
               </div>
             </div>
           </template>
-          <div class="info-grid">
-            <div class="info-cell">
-              <span class="info-label">Type</span>
-              <span class="info-value">{{ requestTypeLabel(request.type) }}</span>
+          <div class="request-details-layout">
+            <div class="info-grid">
+              <div class="info-cell">
+                <span class="info-label">Type</span>
+                <span class="info-value">{{ requestTypeLabel(request.type) }}</span>
+              </div>
+              <div class="info-cell">
+                <span class="info-label">Priority</span>
+                <span class="info-value"><PriorityTag :priority="request.priority" /></span>
+              </div>
+              <div class="info-cell">
+                <span class="info-label">Requester</span>
+                <span class="info-value">{{ request.requester }}</span>
+              </div>
+              <div class="info-cell">
+                <span class="info-label">Organization</span>
+                <span class="info-value">{{ request.requesterOrg || '-' }}</span>
+              </div>
+              <div class="info-cell">
+                <span class="info-label">Tester</span>
+                <span class="info-value">{{ request.tester || '-' }}</span>
+              </div>
+              <div class="info-cell">
+                <span class="info-label">Affected Service</span>
+                <span class="info-value">{{ request.affectedService ? affectedServiceLabel(request.affectedService) : '-' }}</span>
+              </div>
+              <div class="info-cell">
+                <span class="info-label">Occurrence Time</span>
+                <span class="info-value">{{ request.occurrenceTime ? formatDateTime(request.occurrenceTime) : '-' }}</span>
+              </div>
+              <div class="info-cell">
+                <span class="info-label">Resolution Time</span>
+                <span class="info-value">{{ request.requestedResolutionTime ? formatDateTime(request.requestedResolutionTime) : '-' }}</span>
+              </div>
             </div>
-            <div class="info-cell">
-              <span class="info-label">Priority</span>
-              <span class="info-value"><PriorityTag :priority="request.priority" /></span>
-            </div>
-            <div class="info-cell">
-              <span class="info-label">Requester</span>
-              <span class="info-value">{{ request.requester }}</span>
-            </div>
-            <div class="info-cell">
-              <span class="info-label">Team</span>
-              <span class="info-value">{{ request.assignedTeam }}</span>
-            </div>
-            <div class="info-cell">
-              <span class="info-label">Assignee</span>
-              <span class="info-value">{{ request.assignee || 'Unassigned' }}</span>
-            </div>
-            <div class="info-cell">
-              <span class="info-label">Tester</span>
-              <span class="info-value">{{ request.tester || '-' }}</span>
-            </div>
-            <div class="info-cell">
-              <span class="info-label">Affected Service</span>
-              <span class="info-value">{{ request.affectedService ? affectedServiceLabel(request.affectedService) : '-' }}</span>
-            </div>
-            <div class="info-cell">
-              <span class="info-label">Occurrence Time</span>
-              <span class="info-value">{{ request.occurrenceTime ? formatDateTime(request.occurrenceTime) : '-' }}</span>
-            </div>
-            <div class="info-cell">
-              <span class="info-label">Resolution Time</span>
-              <span class="info-value">{{ request.requestedResolutionTime ? formatDateTime(request.requestedResolutionTime) : '-' }}</span>
-            </div>
+
+            <el-form label-position="top" class="assignment-inline">
+              <div class="assignment-inline__title">Assignment</div>
+              <el-form-item label="Team">
+                <el-select
+                  v-model="assignment.teamId"
+                  :disabled="portalMode"
+                  filterable
+                  placeholder="Select team"
+                >
+                  <el-option
+                    v-for="team in teamOptions"
+                    :key="team.id"
+                    :label="team.name"
+                    :value="team.id"
+                  />
+                </el-select>
+              </el-form-item>
+              <el-form-item label="Assignee">
+                <el-select
+                  v-model="assignment.assigneeId"
+                  :disabled="portalMode"
+                  filterable
+                  placeholder="Select assignee"
+                >
+                  <el-option
+                    v-for="person in assigneeOptions"
+                    :key="person.id"
+                    :label="`${person.name} - ${person.team}`"
+                    :value="person.id"
+                  >
+                    <div class="assignee-option">
+                      <span>{{ person.name }}</span>
+                      <small>{{ person.team }}</small>
+                    </div>
+                  </el-option>
+                </el-select>
+              </el-form-item>
+            </el-form>
           </div>
         </el-card>
 
@@ -208,55 +245,7 @@
       </main>
 
       <aside class="detail-side">
-        <el-card class="surface-card" shadow="never">
-          <template #header>
-            <div class="card-title-row">
-              <div>
-                <strong>Assignment</strong>
-                <span>Select assignee, then save at page level</span>
-              </div>
-            </div>
-          </template>
-          <el-form label-position="top">
-            <el-form-item label="Team">
-              <el-select
-                v-model="assignment.teamId"
-                :disabled="portalMode"
-                filterable
-                placeholder="Select team"
-              >
-                <el-option
-                  v-for="team in teamOptions"
-                  :key="team.id"
-                  :label="team.name"
-                  :value="team.id"
-                />
-              </el-select>
-            </el-form-item>
-            <el-form-item label="Assignee">
-              <el-select
-                v-model="assignment.assigneeId"
-                :disabled="portalMode"
-                filterable
-                placeholder="Select assignee"
-              >
-                <el-option
-                  v-for="person in assigneeOptions"
-                  :key="person.id"
-                  :label="`${person.name} - ${person.team}`"
-                  :value="person.id"
-                >
-                  <div class="assignee-option">
-                    <span>{{ person.name }}</span>
-                    <small>{{ person.team }}</small>
-                  </div>
-                </el-option>
-              </el-select>
-            </el-form-item>
-          </el-form>
-        </el-card>
-
-        <el-card class="surface-card" shadow="never">
+        <el-card class="surface-card history-card" shadow="never">
           <template #header>
             <div class="card-title-row">
               <div>
@@ -826,7 +815,7 @@ onBeforeUnmount(() => {
 
 .detail-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 360px;
+  grid-template-columns: minmax(0, 1fr) 380px;
   gap: 16px;
   align-items: start;
 }
@@ -836,6 +825,11 @@ onBeforeUnmount(() => {
   display: grid;
   gap: 16px;
   min-width: 0;
+}
+
+.detail-side {
+  position: sticky;
+  top: 16px;
 }
 
 .state-editor {
@@ -935,11 +929,12 @@ onBeforeUnmount(() => {
 }
 
 .description-window {
-  min-height: 320px;
+  min-height: 360px;
   max-height: none;
   overflow: visible;
-  padding: 4px;
+  padding: 14px;
   border-radius: 8px;
+  background: #fff;
 }
 
 .section-block {
@@ -955,9 +950,16 @@ onBeforeUnmount(() => {
   margin-bottom: 8px;
 }
 
+.request-details-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 16px;
+  align-items: start;
+}
+
 .info-grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 1px;
   background: #e5e7eb;
   border: 1px solid #e5e7eb;
@@ -969,7 +971,8 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding: 8px 12px;
+  min-height: 56px;
+  padding: 10px 12px;
   background: #fff;
 }
 
@@ -988,6 +991,25 @@ onBeforeUnmount(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.assignment-inline {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.assignment-inline__title {
+  color: #111827;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.assignment-inline :deep(.el-form-item) {
+  margin-bottom: 0;
 }
 
 .description-text {
@@ -1171,7 +1193,15 @@ onBeforeUnmount(() => {
 
 .history-timeline {
   padding-left: 4px;
-  max-height: 280px;
+}
+
+.history-card {
+  min-height: 620px;
+}
+
+.history-card :deep(.el-card__body) {
+  min-height: 540px;
+  max-height: calc(100vh - 220px);
   overflow-y: auto;
 }
 
@@ -1244,8 +1274,22 @@ onBeforeUnmount(() => {
   .detail-layout {
     grid-template-columns: 1fr;
   }
+  .detail-side {
+    position: static;
+  }
+  .request-details-layout {
+    grid-template-columns: 1fr;
+  }
   .info-grid {
     grid-template-columns: repeat(3, 1fr);
+  }
+  .history-card {
+    min-height: auto;
+  }
+  .history-card :deep(.el-card__body) {
+    min-height: auto;
+    max-height: none;
+    overflow-y: visible;
   }
 }
 
