@@ -7,10 +7,13 @@ build/
 .cache/
 output/
 .playwright-cli/
+.docker-tmp/
 .agents/
 .codex/
 .ui-audit/
 .claude/
+.trae/
+.trae-html-share-packages/
 .vscode/
 *.log
 *.tmp
@@ -35,6 +38,13 @@ __pycache__/
 
 # cloned ponytail repo (install separately)
 ponytail/
+
+# local/generated handoff artifacts
+upload-restriction-proposal/
+
+# root-level scratch copies; keep canonical sources under module folders
+/RequestService.java
+/SecurityUtils.java
 
 # docker/build artifacts - never commit tar archives
 *.tar
