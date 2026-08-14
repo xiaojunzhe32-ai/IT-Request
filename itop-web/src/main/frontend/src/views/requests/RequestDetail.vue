@@ -1,34 +1,103 @@
 <template>
   <div v-loading="loading" class="detail-page">
-    <PageHeader
-      eyebrow="Request Detail"
-      :title="request.title || 'Request Detail'"
-      :description="request.requestNo"
-    >
-      <template #actions>
+    <section class="work-item-header">
+      <div class="work-title-row">
+        <div class="work-title-main">
+          <div class="work-type-line">
+            <span class="work-type-dot"></span>
+            <span>REQUEST</span>
+            <strong>{{ request.requestNo }}</strong>
+          </div>
+          <h1>{{ request.title || 'Request Detail' }}</h1>
+        </div>
+        <div class="work-header-actions">
         <el-button @click="goBack">Back</el-button>
         <el-button type="primary" :disabled="!hasUnsavedChanges" @click="saveAllChanges">
           Save
         </el-button>
-      </template>
-    </PageHeader>
+        </div>
+      </div>
+
+      <div class="work-owner-row">
+        <div class="owner-avatar">{{ assigneeInitial }}</div>
+        <div class="owner-editor">
+          <span>Assigned To</span>
+          <el-select
+            v-model="assignment.assigneeId"
+            :disabled="portalMode"
+            filterable
+            placeholder="Unassigned"
+            class="owner-select"
+          >
+            <el-option
+              v-for="person in assigneeOptions"
+              :key="person.id"
+              :label="`${person.name} - ${person.team}`"
+              :value="person.id"
+            >
+              <div class="assignee-option">
+                <span>{{ person.name }}</span>
+                <small>{{ person.team }}</small>
+              </div>
+            </el-option>
+          </el-select>
+        </div>
+        <div v-if="selectedAssignee?.team || request.assignedTeam" class="owner-team">
+          {{ selectedAssignee?.team || request.assignedTeam }}
+        </div>
+      </div>
+
+      <div class="work-meta-strip">
+        <div class="work-meta-field work-meta-field--state">
+          <span class="meta-label">State</span>
+          <el-select v-model="statusDraft" placeholder="Select status" class="state-select">
+            <el-option
+              v-for="status in visibleStatusOptions"
+              :key="status"
+              :label="status"
+              :value="status"
+            />
+          </el-select>
+        </div>
+        <div class="work-meta-field">
+          <span class="meta-label">Priority</span>
+          <span class="meta-value"><PriorityTag :priority="request.priority" /></span>
+        </div>
+        <div class="work-meta-field">
+          <span class="meta-label">Type</span>
+          <span class="meta-value">{{ requestTypeLabel(request.type) }}</span>
+        </div>
+        <div class="work-meta-field">
+          <span class="meta-label">Team</span>
+          <span class="meta-value">{{ selectedTeam?.name || request.assignedTeam || '-' }}</span>
+        </div>
+      </div>
+    </section>
 
     <div class="detail-layout">
       <main class="detail-main">
-        <el-card v-if="request.description || safeDescriptionHtml || imageAttachments.length || nonImageAttachments.length" class="surface-card description-card" shadow="never">
-          <template #header>
-            <div class="card-title-row">
-              <div>
-                <strong>Description</strong>
-                <span>Requester-submitted problem details</span>
-              </div>
-            </div>
-          </template>
+        <section v-if="request.description || safeDescriptionHtml || imageAttachments.length || nonImageAttachments.length" class="work-section description-section">
+          <div class="work-section__header">
+            <h2>Description</h2>
+            <span>Requester-submitted problem details</span>
+          </div>
 
           <div v-if="request.description || safeDescriptionHtml || imageAttachments.length" class="section-block" style="border-top: none; margin-top: 0; padding-top: 0;">
             <div class="description-window">
               <div v-if="safeDescriptionHtml" ref="descriptionRef" class="rich-description" v-html="safeDescriptionHtml" @click="handleDescriptionClick" />
               <span v-else-if="request.description" class="description-text">{{ request.description }}</span>
+              <div v-if="imageAttachments.length" class="description-images">
+                <el-image
+                  v-for="attachment in imageAttachments"
+                  :key="attachment.id"
+                  :src="imageUrls[attachment.id]"
+                  :preview-src-list="imagePreviewList"
+                  :initial-index="imagePreviewIndex(attachment.id)"
+                  :preview-teleported="true"
+                  :hide-on-click-modal="true"
+                  class="inline-image"
+                />
+              </div>
             </div>
           </div>
 
@@ -46,135 +115,13 @@
               </div>
             </div>
           </div>
-        </el-card>
+        </section>
 
-        <el-card class="surface-card" shadow="never">
-          <template #header>
-            <div class="card-title-row">
-              <div>
-                <strong>Workflow State</strong>
-                <span>{{ workflowInstruction }}</span>
-              </div>
-              <RequestStatusTag :status="request.status" />
-            </div>
-          </template>
-
-          <div class="state-editor">
-            <div class="state-current">
-              <span>Current Status</span>
-              <RequestStatusTag :status="request.status" />
-            </div>
-
-            <el-form label-position="top" class="state-form">
-              <el-form-item label="Change Status">
-                <el-select v-model="statusDraft" placeholder="Select status">
-                  <el-option
-                    v-for="status in visibleStatusOptions"
-                    :key="status"
-                    :label="status"
-                    :value="status"
-                  />
-                </el-select>
-              </el-form-item>
-            </el-form>
+        <section class="work-section comments-section">
+          <div class="work-section__header">
+            <h2>Comments</h2>
+            <span>Messages are recorded as request history</span>
           </div>
-        </el-card>
-
-        <el-card class="surface-card request-details-card" shadow="never">
-          <template #header>
-            <div class="card-title-row">
-              <div>
-                <strong>Request Details</strong>
-                <span>Summary, ownership and assignment</span>
-              </div>
-            </div>
-          </template>
-          <div class="request-details-layout">
-            <div class="info-grid">
-              <div class="info-cell">
-                <span class="info-label">Type</span>
-                <span class="info-value">{{ requestTypeLabel(request.type) }}</span>
-              </div>
-              <div class="info-cell">
-                <span class="info-label">Priority</span>
-                <span class="info-value"><PriorityTag :priority="request.priority" /></span>
-              </div>
-              <div class="info-cell">
-                <span class="info-label">Requester</span>
-                <span class="info-value">{{ request.requester }}</span>
-              </div>
-              <div class="info-cell">
-                <span class="info-label">Organization</span>
-                <span class="info-value">{{ request.requesterOrg || '-' }}</span>
-              </div>
-              <div class="info-cell">
-                <span class="info-label">Tester</span>
-                <span class="info-value">{{ request.tester || '-' }}</span>
-              </div>
-              <div class="info-cell">
-                <span class="info-label">Affected Service</span>
-                <span class="info-value">{{ request.affectedService ? affectedServiceLabel(request.affectedService) : '-' }}</span>
-              </div>
-              <div class="info-cell">
-                <span class="info-label">Occurrence Time</span>
-                <span class="info-value">{{ request.occurrenceTime ? formatDateTime(request.occurrenceTime) : '-' }}</span>
-              </div>
-              <div class="info-cell">
-                <span class="info-label">Resolution Time</span>
-                <span class="info-value">{{ request.requestedResolutionTime ? formatDateTime(request.requestedResolutionTime) : '-' }}</span>
-              </div>
-            </div>
-
-            <el-form label-position="top" class="assignment-inline">
-              <div class="assignment-inline__title">Assignment</div>
-              <el-form-item label="Team">
-                <el-select
-                  v-model="assignment.teamId"
-                  :disabled="portalMode"
-                  filterable
-                  placeholder="Select team"
-                >
-                  <el-option
-                    v-for="team in teamOptions"
-                    :key="team.id"
-                    :label="team.name"
-                    :value="team.id"
-                  />
-                </el-select>
-              </el-form-item>
-              <el-form-item label="Assignee">
-                <el-select
-                  v-model="assignment.assigneeId"
-                  :disabled="portalMode"
-                  filterable
-                  placeholder="Select assignee"
-                >
-                  <el-option
-                    v-for="person in assigneeOptions"
-                    :key="person.id"
-                    :label="`${person.name} - ${person.team}`"
-                    :value="person.id"
-                  >
-                    <div class="assignee-option">
-                      <span>{{ person.name }}</span>
-                      <small>{{ person.team }}</small>
-                    </div>
-                  </el-option>
-                </el-select>
-              </el-form-item>
-            </el-form>
-          </div>
-        </el-card>
-
-        <el-card class="surface-card" shadow="never">
-          <template #header>
-            <div class="card-title-row">
-              <div>
-                <strong>Comments</strong>
-                <span>Messages are recorded as request history</span>
-              </div>
-            </div>
-          </template>
           <div class="comment-list">
             <article v-for="comment in request.comments" :key="comment.id" class="comment-item">
               <div class="comment-avatar">{{ (comment.author || '?').slice(0, 1) }}</div>
@@ -241,19 +188,77 @@
               </div>
             </div>
           </div>
-        </el-card>
+        </section>
       </main>
 
       <aside class="detail-side">
-        <el-card class="surface-card history-card" shadow="never">
-          <template #header>
-            <div class="card-title-row">
-              <div>
-                <strong>History</strong>
-                <span>Audit trail for this request</span>
+        <section class="inspector-panel">
+          <div class="inspector-section">
+            <div class="inspector-title">Details</div>
+            <div class="field-list">
+              <div class="field-row">
+                <span>Requester</span>
+                <strong>{{ request.requester || '-' }}</strong>
+              </div>
+              <div class="field-row">
+                <span>Organization</span>
+                <strong>{{ request.requesterOrg || '-' }}</strong>
+              </div>
+              <div class="field-row">
+                <span>Affected Service</span>
+                <strong>{{ request.affectedService ? affectedServiceLabel(request.affectedService) : '-' }}</strong>
+              </div>
+              <div class="field-row">
+                <span>Occurrence Time</span>
+                <strong>{{ request.occurrenceTime ? formatDateTime(request.occurrenceTime) : '-' }}</strong>
+              </div>
+              <div class="field-row">
+                <span>Resolution Time</span>
+                <strong>{{ request.requestedResolutionTime ? formatDateTime(request.requestedResolutionTime) : '-' }}</strong>
+              </div>
+              <div class="field-row">
+                <span>Tester</span>
+                <strong>{{ request.tester || '-' }}</strong>
               </div>
             </div>
-          </template>
+          </div>
+
+          <div class="inspector-section">
+            <div class="inspector-title">Assignment</div>
+            <el-form label-position="top" class="side-form">
+              <el-form-item label="Team">
+                <el-select
+                  v-model="assignment.teamId"
+                  :disabled="portalMode"
+                  filterable
+                  placeholder="Select team"
+                >
+                  <el-option
+                    v-for="team in teamOptions"
+                    :key="team.id"
+                    :label="team.name"
+                    :value="team.id"
+                  />
+                </el-select>
+              </el-form-item>
+            </el-form>
+            <div class="field-list field-list--compact">
+              <div class="field-row">
+                <span>Assignee</span>
+                <strong>{{ selectedAssignee?.name || request.assignee || 'Unassigned' }}</strong>
+              </div>
+              <div class="field-row">
+                <span>Workflow</span>
+                <strong>{{ workflowInstruction }}</strong>
+              </div>
+            </div>
+          </div>
+
+          <div class="inspector-section history-section">
+            <div class="inspector-title">
+              <span>History</span>
+              <small>Audit trail</small>
+            </div>
           <el-timeline class="history-timeline">
             <el-timeline-item
               v-for="item in request.history"
@@ -271,7 +276,8 @@
               </div>
             </el-timeline-item>
           </el-timeline>
-        </el-card>
+          </div>
+        </section>
       </aside>
     </div>
 
@@ -309,10 +315,8 @@
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { Document, Picture } from '@element-plus/icons-vue'
-import PageHeader from '@/components/PageHeader.vue'
+import { Document } from '@element-plus/icons-vue'
 import PriorityTag from '@/components/PriorityTag.vue'
-import RequestStatusTag from '@/components/RequestStatusTag.vue'
 import { requestApi } from '@/api/requests'
 import { attachmentApi } from '@/api/attachments'
 import { teamApi, userApi } from '@/api/system'
@@ -497,6 +501,10 @@ const selectedTeam = computed(() =>
 const selectedAssignee = computed(() =>
   assigneeOptions.value.find((person) => person.id === assignment.assigneeId)
 )
+const assigneeInitial = computed(() => {
+  const name = selectedAssignee.value?.name || request.value.assignee || 'U'
+  return name.trim().slice(0, 1).toUpperCase()
+})
 
 const hasStatusChange = computed(() => statusDraft.value !== request.value.status)
 const hasTeamChange = computed(() => assignment.teamId !== request.value.teamId)
@@ -1300,6 +1308,405 @@ onBeforeUnmount(() => {
   }
   .info-grid {
     grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.work-item-header {
+  overflow: hidden;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.035);
+}
+
+.work-title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 18px 20px 12px;
+}
+
+.work-title-main {
+  min-width: 0;
+}
+
+.work-type-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #3269a8;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.work-type-line strong {
+  color: #475467;
+  font-weight: 800;
+}
+
+.work-type-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  background: #3269a8;
+  box-shadow: 0 0 0 3px rgba(50, 105, 168, 0.12);
+}
+
+.work-title-main h1 {
+  margin: 8px 0 0;
+  color: #1f2937;
+  font-size: 24px;
+  font-weight: 650;
+  line-height: 1.35;
+  letter-spacing: 0;
+}
+
+.work-header-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.work-owner-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 20px 16px;
+}
+
+.owner-avatar {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 999px;
+  background: #14532d;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 800;
+  box-shadow: 0 0 0 3px rgba(20, 83, 45, 0.1);
+  flex-shrink: 0;
+}
+
+.owner-editor {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.owner-editor > span {
+  color: #667085;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.owner-select {
+  width: min(320px, 42vw);
+}
+
+.owner-select :deep(.el-select__wrapper),
+.state-select :deep(.el-select__wrapper) {
+  min-height: 34px;
+  border-radius: 6px;
+  background: #fff;
+}
+
+.owner-team {
+  max-width: 360px;
+  overflow: hidden;
+  padding: 5px 9px;
+  border: 1px solid #e5e7eb;
+  border-radius: 999px;
+  background: #f8fafc;
+  color: #667085;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.work-meta-strip {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.9fr) repeat(3, minmax(150px, 1fr));
+  gap: 18px;
+  align-items: center;
+  padding: 14px 20px;
+  border-top: 1px solid #e5e7eb;
+  background: #f5f6f8;
+}
+
+.work-meta-field {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.work-meta-field--state {
+  grid-template-columns: 44px minmax(0, 230px);
+}
+
+.meta-label {
+  color: #6b7280;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.meta-value {
+  min-width: 0;
+  overflow: hidden;
+  color: #344054;
+  font-size: 13px;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.state-select {
+  width: 100%;
+}
+
+.detail-layout {
+  grid-template-columns: minmax(0, 1fr) 370px;
+  gap: 16px;
+}
+
+.detail-main {
+  gap: 16px;
+}
+
+.detail-side {
+  position: sticky;
+  top: 16px;
+}
+
+.work-section,
+.inspector-panel {
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.025);
+}
+
+.work-section {
+  padding: 0 18px 18px;
+}
+
+.work-section__header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 0 10px;
+  margin-bottom: 14px;
+  border-bottom: 1px solid #edf0f3;
+}
+
+.work-section__header h2 {
+  margin: 0;
+  color: #111827;
+  font-size: 18px;
+  font-weight: 750;
+  line-height: 1.2;
+}
+
+.work-section__header span {
+  color: #98a2b3;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.description-section {
+  min-height: 360px;
+}
+
+.description-window {
+  min-height: 250px;
+  padding: 0;
+  border-radius: 0;
+}
+
+.rich-description {
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.rich-description :deep(img) {
+  width: min(100%, 560px);
+  max-height: 380px;
+}
+
+.description-images {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 280px));
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.inline-image {
+  width: 100%;
+  height: 180px;
+  object-fit: contain;
+  background: #f8fafc;
+}
+
+.inspector-panel {
+  overflow: hidden;
+}
+
+.inspector-section {
+  padding: 16px 18px;
+  border-bottom: 1px solid #edf0f3;
+}
+
+.inspector-section:last-child {
+  border-bottom: none;
+}
+
+.inspector-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 14px;
+  color: #111827;
+  font-size: 18px;
+  font-weight: 750;
+  line-height: 1.2;
+}
+
+.inspector-title small {
+  color: #98a2b3;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.field-list {
+  display: grid;
+  gap: 14px;
+}
+
+.field-list--compact {
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.field-row {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.field-row span {
+  color: #98a2b3;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.field-row strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: #344054;
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.45;
+}
+
+.side-form :deep(.el-form-item) {
+  margin-bottom: 0;
+}
+
+.side-form :deep(.el-form-item__label) {
+  color: #98a2b3;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.history-section {
+  min-height: 380px;
+}
+
+.history-section .history-timeline {
+  max-height: min(520px, calc(100vh - 520px));
+  min-height: 300px;
+  overflow-y: auto;
+  padding: 0 6px 0 4px;
+}
+
+.history-section :deep(.el-timeline-item__timestamp) {
+  color: #98a2b3;
+  font-size: 11px;
+}
+
+.comment-item {
+  border-radius: 8px;
+  background: #fff;
+  border-color: #edf0f3;
+}
+
+.comment-item:hover {
+  background: #f8fafc;
+}
+
+@media (max-width: 1180px) {
+  .detail-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .detail-side {
+    position: static;
+  }
+
+  .work-meta-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .history-section .history-timeline {
+    max-height: none;
+    overflow-y: visible;
+  }
+}
+
+@media (max-width: 720px) {
+  .work-title-row,
+  .work-owner-row,
+  .work-section__header,
+  .comment-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .work-owner-row {
+    align-items: flex-start;
+  }
+
+  .owner-editor {
+    width: 100%;
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .owner-select {
+    width: 100%;
+  }
+
+  .work-meta-strip {
+    grid-template-columns: 1fr;
+  }
+
+  .work-meta-field,
+  .work-meta-field--state {
+    grid-template-columns: 86px minmax(0, 1fr);
+  }
+
+  .work-section__header span {
+    white-space: normal;
   }
 }
 
