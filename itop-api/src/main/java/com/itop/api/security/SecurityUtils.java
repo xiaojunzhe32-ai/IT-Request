@@ -36,7 +36,7 @@ public class SecurityUtils {
 
     public static final String ALL_PERMISSIONS = "ALL_PERMISSIONS";
     public static final String ROLE_PREFIX = "ROLE_";
-    public static final String ITMD_TEAM_TYPE = "ITMD";
+    public static final String ITMD_TEAM_TYPE = "IT_TEAM";
 
     private final UserRepository userRepository;
     private final UserAccessibleOrgRepository userAccessibleOrgRepository;
