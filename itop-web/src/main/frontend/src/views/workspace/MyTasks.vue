@@ -100,7 +100,7 @@ const sortTasks = (items: WorkflowRequest[]) => [...items].sort((left, right) =>
   const priorityDifference = priorityRank[left.priority] - priorityRank[right.priority]
   if (priorityDifference !== 0) return priorityDifference
 
-  return new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime()
+  return right.id - left.id
 })
 
 const taskModules = computed(() => {
