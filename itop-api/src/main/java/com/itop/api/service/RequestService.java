@@ -229,7 +229,8 @@ public class RequestService {
         if (!securityUtils.canAccessTicket(ticket.getTeamId(), ticket.getCallerId())) {
             return null;
         }
-        if (!securityUtils.canTransferToTeam(teamId)) {
+        // Only check team transfer permission when actually changing teams
+        if (teamId != null && !teamId.equals(ticket.getTeamId()) && !securityUtils.canTransferToTeam(teamId)) {
             return null;
         }
         Long oldAgentId = ticket.getAgentId();
