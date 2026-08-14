@@ -1160,6 +1160,8 @@ onBeforeUnmount(() => {
 
 .history-timeline {
   padding-left: 4px;
+  max-height: 280px;
+  overflow-y: auto;
 }
 
 .history-action {
