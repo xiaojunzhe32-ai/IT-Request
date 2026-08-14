@@ -36,6 +36,8 @@
                         <configuration>
                             <nodeVersion>${node.version}</nodeVersion>
                             <npmVersion>${npm.version}</npmVersion>
+                            <nodeDownloadRoot>https://npmmirror.com/mirrors/node/</nodeDownloadRoot>
+                            <npmDownloadRoot>https://registry.npmmirror.com/npm/-/</npmDownloadRoot>
                         </configuration>
                     </execution>
                     <execution>
