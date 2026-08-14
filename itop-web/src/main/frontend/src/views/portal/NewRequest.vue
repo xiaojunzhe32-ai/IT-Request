@@ -159,7 +159,7 @@
           </section>
 
           <div class="form-footer">
-            <el-button @click="router.push('/portal')">Cancel</el-button>
+            <el-button @click="router.push(cancelPath)">Cancel</el-button>
             <el-button type="primary" :loading="submitting" @click="submitRequest">
               <el-icon><Plus /></el-icon>
               Submit Request
@@ -227,7 +227,7 @@ import type { RequestAttachment, RequestPriority } from '@/types/requests'
 const router = useRouter()
 const route = useRoute()
 const workspaceMode = computed(() => route.path.startsWith('/workspace'))
-const cancelPath = computed(() => workspaceMode.value ? '/requests' : '/portal')
+const cancelPath = computed(() => workspaceMode.value ? '/requests' : '/portal/requests')
 const detailPath = (id: number) => workspaceMode.value ? `/workspace/requests/${id}` : `/portal/requests/${id}`
 const requestOrigin = computed(() => workspaceMode.value ? 'admin' : 'portal')
 const codeTableStore = useCodeTableStore()
@@ -466,7 +466,7 @@ const submitRequest = async () => {
         teamId: form.teamId || undefined,
         occurrenceTime: form.occurrenceTime || undefined,
         requestedResolutionTime: form.requestedResolutionTime || undefined,
-        origin: 'portal'
+        origin: requestOrigin.value
       })
       let persistedHtml = draftHtml
       for (const draft of form.attachments) {
