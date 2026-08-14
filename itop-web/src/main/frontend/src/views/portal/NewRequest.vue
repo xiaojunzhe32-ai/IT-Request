@@ -1,10 +1,14 @@
 <template>
   <div class="portal-page">
     <PageHeader
-      eyebrow="User Portal"
+      :eyebrow="workspaceMode ? 'Admin Console' : 'User Portal'"
       title="New Request"
       description="Create a request with enough context for IT to route and handle it without a service desk step."
-    />
+    >
+      <template #actions>
+        <el-button @click="router.push(cancelPath)">Cancel</el-button>
+      </template>
+    </PageHeader>
 
     <div class="request-create-layout">
       <el-card class="surface-card request-form-card" shadow="never">
