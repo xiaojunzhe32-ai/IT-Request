@@ -279,6 +279,19 @@ const ensureSelectedTeamOption = () => {
   }
 }
 
+const applySuggestedTeam = (teamId: number, teamName?: string) => {
+  const selected = itTeams.value.find((team) => team.id === teamId)
+  const displayName = selected?.name || teamName
+  if (!displayName) {
+    form.teamId = undefined
+    suggestedTeamName.value = ''
+    return
+  }
+  form.teamId = teamId
+  suggestedTeamName.value = displayName
+  ensureSelectedTeamOption()
+}
+
 const autoSuggestTeam = async () => {
   if (!form.affectedService && !form.type) {
     suggestedTeamName.value = ''
@@ -292,9 +305,7 @@ const autoSuggestTeam = async () => {
       affectedService: form.affectedService || undefined,
     })
     if (result && result.teamId) {
-      form.teamId = result.teamId
-      suggestedTeamName.value = result.teamName || `Team ${result.teamId}`
-      ensureSelectedTeamOption()
+      applySuggestedTeam(result.teamId, result.teamName)
     } else {
       form.teamId = undefined
       suggestedTeamName.value = ''
