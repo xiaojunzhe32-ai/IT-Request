@@ -884,11 +884,14 @@ onBeforeUnmount(() => {
 
 .rich-description :deep(img) {
   display: block;
-  max-width: 100%;
+  width: min(100%, 360px);
+  max-height: 220px;
   margin: 8px 0;
+  object-fit: contain;
   border-radius: 10px;
   border: 1px solid #e5e7eb;
-  cursor: pointer;
+  background: #f8fafc;
+  cursor: zoom-in;
 }
 
 .rich-description :deep(pre) {

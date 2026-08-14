@@ -18,7 +18,7 @@ public class UserRequest extends Ticket {
     @Column(name = "origin", length = 50)
     private String origin = "portal"; // portal, email, phone, chat
 
-    /** 人类可读请求编号，如 REQ-20260808-0001 */
+    /** 人类可读请求编号，如 REQ-10001 */
     @Column(name = "request_no", length = 50, unique = true)
     private String requestNo;
 

@@ -613,10 +613,13 @@ onMounted(() => {
 .rich-editor :deep(img),
 .rich-editor img {
   display: block;
-  max-width: 100%;
+  width: min(100%, 360px);
+  max-height: 220px;
+  object-fit: contain;
   margin: 10px 0;
   border-radius: 10px;
   border: 1px solid #e5e7eb;
+  background: #f8fafc;
 }
 
 .rich-editor :deep(pre),

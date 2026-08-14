@@ -19,7 +19,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -42,7 +41,6 @@ public class RequestService {
     private final SLAService slaService;
     private final SecurityUtils securityUtils;
 
-    private static final DateTimeFormatter REQUEST_NO_DATE = DateTimeFormatter.ofPattern("yyyyMMdd");
     private static final Whitelist RICH_TEXT_WHITELIST = new Whitelist()
             .addTags("a", "b", "br", "code", "div", "em", "i", "img", "li", "ol", "p", "pre", "span", "strong", "ul")
             .addAttributes("a", "href")
@@ -100,9 +98,11 @@ public class RequestService {
             }
             if (search != null && !search.isBlank()) {
                 String like = "%" + search.trim().toLowerCase() + "%";
+                var userRequest = cb.treat(root, UserRequest.class);
                 predicates.add(cb.or(
                         cb.like(cb.lower(root.get("title")), like),
-                        cb.like(cb.lower(root.get("name")), like)
+                        cb.like(cb.lower(root.get("name")), like),
+                        cb.like(cb.lower(userRequest.get("requestNo")), like)
                 ));
             }
             return cb.and(predicates.toArray(new Predicate[0]));
@@ -531,10 +531,8 @@ public class RequestService {
     // ---------- 状态/优先级工具 ----------
 
     private String generateRequestNo(Ticket ticket) {
-        String datePart = ticket.getCreatedAt() != null
-                ? ticket.getCreatedAt().format(REQUEST_NO_DATE)
-                : LocalDateTime.now().format(REQUEST_NO_DATE);
-        return "REQ-" + datePart + "-" + String.format("%04d", ticket.getId());
+        long sequence = ticket.getId() != null ? 10000 + ticket.getId() : 10000;
+        return "REQ-" + sequence;
     }
 
     /** 前端标签 -> 枚举 */

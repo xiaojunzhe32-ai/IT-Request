@@ -6,33 +6,43 @@
       description="Technician-focused view for assigned requests, handoff to testing and rework after user test failure."
     />
 
-    <div v-loading="loading" class="task-status-list">
+    <div v-loading="loading" class="task-modules">
       <section
-        v-for="section in statusSections"
-        :key="section.status"
-        class="task-status-section"
+        v-for="module in taskModules"
+        :key="module.title"
+        class="task-module"
+        :style="{ '--module-accent': module.accent }"
       >
-        <header class="task-status-header">
+        <header class="task-module__header">
           <div>
-            <span>{{ section.status }}</span>
-            <strong>{{ section.items.length }}</strong>
+            <strong>{{ module.title }}</strong>
+            <span>{{ module.description }}</span>
           </div>
+          <em>{{ module.total }}</em>
         </header>
 
-        <article
-          v-for="request in section.items"
-          :key="request.id"
-          class="task-card"
-        >
-          <div class="task-card__top">
-            <a class="task-no-link" @click="router.push(`/workspace/requests/${request.id}`)">{{ request.requestNo }}</a>
-            <PriorityTag :priority="request.priority" />
-          </div>
-          <h3>{{ request.title }}</h3>
-          <p>{{ request.requester }} · {{ request.assignedTeam || 'Unassigned team' }}</p>
-          <RequestStatusTag :status="request.status" />
-        </article>
-        <div v-if="!section.items.length" class="empty-column">No requests</div>
+        <div class="task-module__lanes">
+          <section v-for="lane in module.lanes" :key="lane.title" class="task-lane">
+            <header class="task-lane__header">
+              <span>{{ lane.title }}</span>
+              <strong>{{ lane.items.length }}</strong>
+            </header>
+            <article
+              v-for="request in lane.items"
+              :key="request.id"
+              class="task-card"
+            >
+              <div class="task-card__top">
+                <a class="task-no-link" @click="router.push(`/workspace/requests/${request.id}`)">{{ request.requestNo }}</a>
+                <PriorityTag :priority="request.priority" />
+              </div>
+              <h3>{{ request.title }}</h3>
+              <p>{{ request.requester }} · {{ request.assignedTeam || 'Unassigned team' }}</p>
+              <RequestStatusTag :status="request.status" />
+            </article>
+            <div v-if="!lane.items.length" class="empty-column">No requests</div>
+          </section>
+        </div>
       </section>
     </div>
   </div>
@@ -60,33 +70,58 @@ const priorityRank: Record<WorkflowRequest['priority'], number> = {
   Low: 3
 }
 
-const statusOrder: WorkflowRequest['status'][] = [
-  'Assigned',
-  'In Progress',
-  'To be test',
-  'Testing',
-  'Resolved',
-  'User Test Failed',
-  'Closed'
-]
+const sortTasks = (items: WorkflowRequest[]) => [...items].sort((left, right) => {
+  const priorityDifference = priorityRank[left.priority] - priorityRank[right.priority]
+  if (priorityDifference !== 0) return priorityDifference
 
-const visibleTasks = computed(() => requests.value
-  .filter((item) => statusOrder.includes(item.status))
-  .sort((left, right) => {
-    const leftStatusRank = statusOrder.indexOf(left.status)
-    const rightStatusRank = statusOrder.indexOf(right.status)
-    if (leftStatusRank !== rightStatusRank) return leftStatusRank - rightStatusRank
+  return new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime()
+})
 
-    const priorityDifference = priorityRank[left.priority] - priorityRank[right.priority]
-    if (priorityDifference !== 0) return priorityDifference
+const assignedToMe = computed(() => sortTasks(requests.value.filter((item) => item.status !== 'Closed')))
+const completedRequests = computed(() => sortTasks(requests.value.filter((item) => item.status === 'Resolved' || item.status === 'Closed')))
 
-    return new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime()
+const taskModules = computed(() => {
+  const makeLane = (title: string, statuses: WorkflowRequest['status'][], source = assignedToMe.value) => ({
+    title,
+    items: source.filter((item) => statuses.includes(item.status))
+  })
+
+  const modules = [
+    {
+      title: 'Work in Hand',
+      description: 'Assigned and active implementation',
+      accent: '#000080',
+      lanes: [
+        makeLane('Assigned', ['Assigned']),
+        makeLane('In Progress', ['In Progress'])
+      ]
+    },
+    {
+      title: 'Test Readiness',
+      description: 'Ready for test and internal validation',
+      accent: '#4f46e5',
+      lanes: [
+        makeLane('To be test', ['To be test']),
+        makeLane('Testing', ['Testing'])
+      ]
+    },
+    {
+      title: 'Feedback & Closure',
+      description: 'Resolved, returned or closed requests',
+      accent: '#0f766e',
+      lanes: [
+        makeLane('Resolved', ['Resolved'], completedRequests.value),
+        makeLane('User Test Failed', ['User Test Failed']),
+        makeLane('Closed', ['Closed'], completedRequests.value)
+      ]
+    }
+  ]
+
+  return modules.map((module) => ({
+    ...module,
+    total: module.lanes.reduce((sum, lane) => sum + lane.items.length, 0)
   }))
-
-const statusSections = computed(() => statusOrder.map((status) => ({
-  status,
-  items: visibleTasks.value.filter((item) => item.status === status)
-})))
+})
 
 const loadTasks = async () => {
   loading.value = true
@@ -116,33 +151,86 @@ onMounted(loadTasks)
   gap: 16px;
 }
 
-.task-status-list {
+.task-modules {
   display: grid;
-  gap: 14px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  align-items: start;
 }
 
-.task-status-section {
+.task-module {
+  min-height: 520px;
+  padding: 14px;
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(248, 250, 252, 0.95), #fff);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.04);
+}
+
+.task-module__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid var(--module-accent);
+}
+
+.task-module__header div {
+  display: grid;
+  gap: 4px;
+}
+
+.task-module__header strong {
+  color: #111827;
+  font-size: 15px;
+}
+
+.task-module__header span {
+  color: #667085;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.task-module__header em {
+  display: grid;
+  place-items: center;
+  min-width: 30px;
+  height: 30px;
+  padding: 0 9px;
+  border-radius: 999px;
+  background: var(--module-accent);
+  color: #fff;
+  font-size: 13px;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.task-module__lanes {
+  display: grid;
+  gap: 16px;
+}
+
+.task-lane {
   display: grid;
   gap: 10px;
 }
 
-.task-status-header {
-  padding-bottom: 6px;
-}
-
-.task-status-header div {
+.task-lane__header {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 8px;
+  padding: 0 2px 2px;
 }
 
-.task-status-header span {
+.task-lane__header span {
   color: #111827;
   font-size: 13px;
   font-weight: 800;
 }
 
-.task-status-header strong {
+.task-lane__header strong {
   display: grid;
   place-items: center;
   min-width: 22px;
@@ -150,7 +238,7 @@ onMounted(loadTasks)
   padding: 0 7px;
   border-radius: 999px;
   background: #eef2ff;
-  color: #000080;
+  color: var(--module-accent);
   font-size: 12px;
 }
 
@@ -208,6 +296,12 @@ onMounted(loadTasks)
 .empty-column {
   padding: 2px 0 10px;
   text-align: left;
+}
+
+@media (max-width: 1180px) {
+  .task-modules {
+    grid-template-columns: 1fr;
+  }
 }
 
 </style>
