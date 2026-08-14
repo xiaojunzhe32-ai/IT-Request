@@ -272,6 +272,13 @@ const routingPreview = computed(() => {
 const suggestedTeamName = ref('')
 const autoSuggesting = ref(false)
 
+const ensureSelectedTeamOption = () => {
+  if (!form.teamId || !suggestedTeamName.value) return
+  if (!itTeams.value.some((team) => team.id === form.teamId)) {
+    itTeams.value.push({ id: form.teamId, name: suggestedTeamName.value })
+  }
+}
+
 const autoSuggestTeam = async () => {
   if (!form.affectedService && !form.type) {
     suggestedTeamName.value = ''
@@ -286,8 +293,10 @@ const autoSuggestTeam = async () => {
     })
     if (result && result.teamId) {
       form.teamId = result.teamId
-      suggestedTeamName.value = result.teamName || ''
+      suggestedTeamName.value = result.teamName || `Team ${result.teamId}`
+      ensureSelectedTeamOption()
     } else {
+      form.teamId = undefined
       suggestedTeamName.value = ''
     }
   } catch {
@@ -432,6 +441,7 @@ const loadITTeams = async () => {
   try {
     const page = await teamApi.list({ page: 0, size: 100, type: 'IT_TEAM' })
     itTeams.value = page.content
+    ensureSelectedTeamOption()
     // Auto-select if only one IT team
     if (itTeams.value.length === 1) {
       form.teamId = itTeams.value[0].id
