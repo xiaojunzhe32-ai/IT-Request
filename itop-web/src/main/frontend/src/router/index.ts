@@ -85,7 +85,7 @@ const routes: RouteRecordRaw[] = [
         path: 'workspace/new-request',
         name: 'WorkspaceNewRequest',
         component: () => import('@/views/portal/NewRequest.vue'),
-        meta: { title: 'New Request', icon: 'Plus', permission: 'request:write' }
+        meta: { title: 'New Request', icon: 'Plus', permission: 'request:create' }
       },
       {
         path: 'workspace/requests/:id',

@@ -25,6 +25,10 @@
           <el-icon><Operation /></el-icon>
           <span>My Tasks</span>
         </el-menu-item>
+        <el-menu-item index="/workspace/new-request" v-if="canShowMenu('request:create')">
+          <el-icon><Plus /></el-icon>
+          <span>New Request</span>
+        </el-menu-item>
         <el-menu-item index="/workspace/assignment" v-if="canShowMenu('request:assign')">
           <el-icon><Connection /></el-icon>
           <span>Assignment</span>
@@ -111,6 +115,7 @@ import {
   Monitor,
   Odometer,
   Operation,
+  Plus,
   Tickets,
   User,
   UserFilled
