@@ -1027,7 +1027,7 @@ onBeforeUnmount(() => {
 .detail-attachment-list {
   display: grid;
   gap: 8px;
-  max-height: 280px;
+  max-height: 644px;
   overflow-y: auto;
   padding: 4px;
   border-radius: 8px;
