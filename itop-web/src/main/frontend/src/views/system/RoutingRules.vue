@@ -21,7 +21,7 @@
     />
 
     <el-card v-loading="loading" class="surface-card" shadow="never">
-      <el-table :data="rules" row-key="id" highlight-current-row>
+      <el-table :data="pagedRules" row-key="id" highlight-current-row>
         <el-table-column label="Rule" min-width="240">
           <template #default="{ row }">
             <div class="main-cell">
@@ -47,10 +47,18 @@
           </template>
         </el-table-column>
       </el-table>
+      <el-pagination
+        v-if="rules.length > rulePageSize"
+        v-model:current-page="ruleCurrentPage"
+        :page-size="rulePageSize"
+        :total="rules.length"
+        layout="total, prev, pager, next"
+        class="table-pagination"
+      />
     </el-card>
 
     <el-dialog v-model="dialogVisible" :title="editingId ? 'Edit Routing Rule' : 'New Routing Rule'" width="660px">
-      <el-form label-position="top" class="dialog-grid">
+        <el-form label-position="top" class="dialog-grid">
         <el-form-item label="Name"><el-input v-model="form.name" /></el-form-item>
         <el-form-item label="Order"><el-input-number v-model="form.sortOrder" :min="0" /></el-form-item>
         <el-form-item label="Affected Service">
@@ -112,6 +120,13 @@ const rules = ref<RoutingRule[]>([])
 const teams = ref<Team[]>([])
 const codeTableStore = useCodeTableStore()
 const loading = ref(false)
+
+const rulePageSize = 15
+const ruleCurrentPage = ref(1)
+const pagedRules = computed(() => {
+  const start = (ruleCurrentPage.value - 1) * rulePageSize
+  return rules.value.slice(start, start + rulePageSize)
+})
 const saving = ref(false)
 const dialogVisible = ref(false)
 const editingId = ref<number>()
@@ -144,6 +159,7 @@ const load = async () => {
     ])
     rules.value = ruleList
     teams.value = teamPage.content
+    ruleCurrentPage.value = 1
   } catch {
     ElMessage.error('Unable to load routing rules')
   } finally {
@@ -271,6 +287,11 @@ onMounted(load)
 
 .span-2 {
   grid-column: 1 / -1;
+}
+
+.table-pagination {
+  margin-top: 16px;
+  justify-content: flex-end;
 }
 
 @media (max-width: 760px) {

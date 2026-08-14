@@ -2,7 +2,7 @@
   <div class="table-shell request-table-shell">
     <el-table
       class="request-table"
-      :data="requests"
+      :data="pagedRequests"
       :empty-text="emptyText"
       row-key="id"
       highlight-current-row
@@ -60,11 +60,20 @@
         </template>
       </el-table-column>
     </el-table>
+
+    <el-pagination
+      v-if="requests.length > pageSize"
+      v-model:current-page="currentPage"
+      :page-size="pageSize"
+      :total="requests.length"
+      layout="total, prev, pager, next"
+      class="table-pagination"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { MoreFilled } from '@element-plus/icons-vue'
@@ -80,14 +89,25 @@ const props = withDefaults(defineProps<{
   showRequester?: boolean
   workspaceMode?: boolean
   emptyText?: string
+  pageSize?: number
 }>(), {
   showRequester: true,
   workspaceMode: false,
-  emptyText: 'No requests found'
+  emptyText: 'No requests found',
+  pageSize: 10
 })
 
 const router = useRouter()
 const codeTableStore = useCodeTableStore()
+const currentPage = ref(1)
+
+const pageSize = computed(() => props.pageSize)
+const pagedRequests = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value
+  return props.requests.slice(start, start + pageSize.value)
+})
+
+watch(() => props.requests, () => { currentPage.value = 1 })
 
 const requestTypeLabel = (value?: string) => codeTableStore.labelFor('REQUEST_TYPE', value, value || '-')
 
@@ -115,6 +135,11 @@ onMounted(() => {
 
 .request-table-shell {
   border-radius: 8px;
+}
+
+.table-pagination {
+  margin-top: 16px;
+  justify-content: flex-end;
 }
 
 .request-title-cell {

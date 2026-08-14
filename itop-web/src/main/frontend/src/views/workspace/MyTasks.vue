@@ -23,7 +23,7 @@
 
         <div class="task-module__body">
           <article
-            v-for="request in module.items"
+            v-for="request in pagedModuleItems(module.title, module.items)"
             :key="request.id"
             class="task-card"
           >
@@ -37,13 +37,23 @@
           </article>
           <div v-if="!module.items.length" class="empty-column">No requests</div>
         </div>
+
+        <el-pagination
+          v-if="module.items.length > modulePageSize"
+          v-model:current-page="modulePages[module.title]"
+          :page-size="modulePageSize"
+          :total="module.items.length"
+          layout="prev, pager, next"
+          small
+          class="module-pagination"
+        />
       </section>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import PageHeader from '@/components/PageHeader.vue'
@@ -57,6 +67,14 @@ const router = useRouter()
 const userStore = useUserStore()
 const loading = ref(false)
 const requests = ref<WorkflowRequest[]>([])
+const modulePageSize = 5
+const modulePages = reactive<Record<string, number>>({})
+
+const pagedModuleItems = (title: string, items: WorkflowRequest[]) => {
+  const page = modulePages[title] || 1
+  const start = (page - 1) * modulePageSize
+  return items.slice(start, start + modulePageSize)
+}
 const priorityRank: Record<WorkflowRequest['priority'], number> = {
   Critical: 0,
   High: 1,
@@ -196,6 +214,11 @@ onMounted(loadTasks)
 .task-module__body {
   display: grid;
   gap: 12px;
+}
+
+.module-pagination {
+  margin-top: 12px;
+  justify-content: center;
 }
 
 .task-card {

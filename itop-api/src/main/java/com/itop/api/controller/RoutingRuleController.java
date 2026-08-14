@@ -26,7 +26,7 @@ public class RoutingRuleController {
 
     @Operation(summary = "Suggest team", description = "Suggest a team based on routing rules for the given criteria")
     @GetMapping("/suggest")
-    @PreAuthorize("@securityUtils.hasPermission('request:write')")
+    @PreAuthorize("@securityUtils.hasPermission('request:create')")
     public ResponseEntity<ApiResponse<RoutingRuleDTO>> suggestTeam(
             @RequestParam(value = "organizationId", required = false) Long organizationId,
             @RequestParam(value = "requestType", required = false) String requestType,

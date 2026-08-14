@@ -11,7 +11,7 @@
     </PageHeader>
 
     <el-card v-loading="loading" class="surface-card" shadow="never">
-      <el-table :data="teams" row-key="id" highlight-current-row>
+      <el-table :data="pagedTeams" row-key="id" highlight-current-row>
         <el-table-column label="Team" min-width="220">
           <template #default="{ row }">
             <div class="main-cell">
@@ -53,6 +53,14 @@
           </template>
         </el-table-column>
       </el-table>
+      <el-pagination
+        v-if="teams.length > teamPageSize"
+        v-model:current-page="teamCurrentPage"
+        :page-size="teamPageSize"
+        :total="teams.length"
+        layout="total, prev, pager, next"
+        class="table-pagination"
+      />
     </el-card>
 
     <el-dialog v-model="dialogVisible" :title="editingId ? 'Edit Team' : 'New Team'" width="660px">
@@ -127,6 +135,13 @@ const form = reactive({
   leaderIds: [] as number[],
   memberIds: [] as number[],
   status: 'ACTIVE'
+})
+
+const teamPageSize = 10
+const teamCurrentPage = ref(1)
+const pagedTeams = computed(() => {
+  const start = (teamCurrentPage.value - 1) * teamPageSize
+  return teams.value.slice(start, start + teamPageSize)
 })
 
 const memberOptions = computed(() =>
@@ -235,6 +250,7 @@ onMounted(load)
 .member-tag { margin-right: 6px; }
 .dialog-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 16px; }
 .span-2 { grid-column: 1 / -1; }
+.table-pagination { margin-top: 16px; justify-content: flex-end; }
 @media (max-width: 760px) {
   .dialog-grid { grid-template-columns: 1fr; }
   .span-2 { grid-column: auto; }

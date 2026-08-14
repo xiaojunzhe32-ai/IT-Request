@@ -9,7 +9,7 @@
         <el-input v-model="keyword" placeholder="Search username, name or email" clearable />
         <el-select v-model="statusFilter" placeholder="Status" clearable><el-option label="Active" value="active" /><el-option label="Inactive" value="inactive" /></el-select>
       </div>
-      <el-table :data="filteredUsers" row-key="id" highlight-current-row>
+      <el-table :data="pagedUsers" row-key="id" highlight-current-row>
         <el-table-column label="User" min-width="240">
           <template #default="{ row }"><div class="identity-cell"><span class="avatar">{{ displayName(row).slice(0, 1) }}</span><div><strong>{{ displayName(row) }}</strong><small>{{ row.username }} · {{ row.email }}</small></div></div></template>
         </el-table-column>
@@ -18,6 +18,14 @@
         <el-table-column prop="status" label="Status" width="110"><template #default="{ row }"><el-tag :type="row.status === 'active' ? 'success' : 'info'" size="small">{{ row.status }}</el-tag></template></el-table-column>
         <el-table-column label="Actions" width="180" fixed="right"><template #default="{ row }"><el-button text @click="openEdit(row)">Edit</el-button><el-button text @click="toggleStatus(row)">{{ row.status === 'active' ? 'Disable' : 'Enable' }}</el-button></template></el-table-column>
       </el-table>
+      <el-pagination
+        v-if="filteredUsers.length > userPageSize"
+        v-model:current-page="userCurrentPage"
+        :page-size="userPageSize"
+        :total="filteredUsers.length"
+        layout="total, prev, pager, next"
+        class="table-pagination"
+      />
     </el-card>
 
     <el-dialog v-model="dialogVisible" :title="editingId ? 'Edit User' : 'New User'" width="640px">
@@ -36,7 +44,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import PageHeader from '@/components/PageHeader.vue'
 import { userApi } from '@/api/system'
@@ -56,6 +64,14 @@ const filteredUsers = computed(() => users.value.filter((user) => {
   const haystack = `${user.username} ${displayName(user)} ${user.email}`.toLowerCase()
   return (!keyword.value || haystack.includes(keyword.value.toLowerCase())) && (!statusFilter.value || user.status === statusFilter.value)
 }))
+
+const userPageSize = 10
+const userCurrentPage = ref(1)
+const pagedUsers = computed(() => {
+  const start = (userCurrentPage.value - 1) * userPageSize
+  return filteredUsers.value.slice(start, start + userPageSize)
+})
+watch([keyword, statusFilter], () => { userCurrentPage.value = 1 })
 
 const load = async () => {
   loading.value = true
@@ -103,5 +119,6 @@ onMounted(load)
 .dialog-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 16px; }
 .span-2 { grid-column: 1 / -1; }
 .admin-hint { margin-left: 10px; color: #667085; font-size: 12px; }
+.table-pagination { margin-top: 16px; justify-content: flex-end; }
 @media (max-width: 900px) { .toolbar-row, .dialog-grid { grid-template-columns: 1fr; } .span-2 { grid-column: auto; } }
 </style>

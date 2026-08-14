@@ -39,7 +39,7 @@
         <el-tag effect="light">{{ items.length }} items</el-tag>
       </div>
 
-      <el-table :data="items" row-key="id" highlight-current-row>
+      <el-table :data="pagedItems" row-key="id" highlight-current-row>
         <el-table-column label="Name" min-width="220">
           <template #default="{ row }">
             <div class="main-cell">
@@ -63,10 +63,18 @@
           </template>
         </el-table-column>
       </el-table>
+      <el-pagination
+        v-if="items.length > itemPageSize"
+        v-model:current-page="itemCurrentPage"
+        :page-size="itemPageSize"
+        :total="items.length"
+        layout="total, prev, pager, next"
+        class="table-pagination"
+      />
     </el-card>
 
     <el-dialog v-model="dialogVisible" :title="editingId ? 'Edit Code Table Item' : 'New Code Table Item'" width="620px">
-      <el-form label-position="top" class="dialog-grid">
+        <el-form label-position="top" class="dialog-grid">
         <el-form-item label="Table">
           <el-input :model-value="currentMeta.label" disabled />
         </el-form-item>
@@ -137,6 +145,13 @@ const dialogVisible = ref(false)
 const editingId = ref<number>()
 const codeTableStore = useCodeTableStore()
 
+const itemPageSize = 15
+const itemCurrentPage = ref(1)
+const pagedItems = computed(() => {
+  const start = (itemCurrentPage.value - 1) * itemPageSize
+  return items.value.slice(start, start + itemPageSize)
+})
+
 const form = reactive({
   name: '',
   code: '',
@@ -173,6 +188,7 @@ const loadItems = async () => {
   loading.value = true
   try {
     items.value = await codeTableApi.list(activeTable.value)
+    itemCurrentPage.value = 1
   } catch {
     ElMessage.error('Unable to load code table items')
   } finally {
@@ -305,6 +321,11 @@ onMounted(loadItems)
 
 .span-2 {
   grid-column: 1 / -1;
+}
+
+.table-pagination {
+  margin-top: 16px;
+  justify-content: flex-end;
 }
 
 @media (max-width: 720px) {
