@@ -13,11 +13,39 @@
             <el-icon><Search /></el-icon>
           </template>
         </el-input>
-        <el-select v-model="teamFilter" placeholder="Team" clearable>
+        <el-select
+          v-model="teamFilter"
+          multiple
+          collapse-tags
+          collapse-tags-tooltip
+          filterable
+          clearable
+          placeholder="Team"
+        >
           <el-option v-for="team in teams" :key="team.id" :label="team.name" :value="team.id" />
         </el-select>
-        <el-select v-model="statusFilter" placeholder="Status" clearable>
+        <el-select
+          v-model="statusFilter"
+          multiple
+          collapse-tags
+          collapse-tags-tooltip
+          filterable
+          clearable
+          placeholder="Status"
+        >
           <el-option v-for="status in requestStatuses" :key="status" :label="status" :value="status" />
+        </el-select>
+        <el-select
+          v-model="assigneeFilter"
+          multiple
+          collapse-tags
+          collapse-tags-tooltip
+          filterable
+          clearable
+          placeholder="Assignee"
+        >
+          <el-option label="Unassigned" :value="0" />
+          <el-option v-for="user in users" :key="user.id" :label="displayName(user)" :value="user.id" />
         </el-select>
       </div>
 
@@ -38,19 +66,45 @@ import { Search } from '@element-plus/icons-vue'
 import PageHeader from '@/components/PageHeader.vue'
 import RequestTable from '@/components/RequestTable.vue'
 import { requestApi } from '@/api/requests'
-import { teamApi } from '@/api/system'
+import { teamApi, userApi } from '@/api/system'
 import { requestStatuses } from '@/data/requestOptions'
 import type { RequestStatus, WorkflowRequest } from '@/types/requests'
-import type { Team } from '@/types/system'
+import type { SystemUser, Team } from '@/types/system'
 
 const keyword = ref('')
-const teamFilter = ref<number | ''>('')
-const statusFilter = ref<RequestStatus | ''>('')
+const teamFilter = ref<number[]>([])
+const statusFilter = ref<RequestStatus[]>([])
+const assigneeFilter = ref<number[]>([])
 const loading = ref(false)
 const requests = ref<WorkflowRequest[]>([])
 const teams = ref<Team[]>([])
+const users = ref<SystemUser[]>([])
 
-const filteredRequests = computed(() => requests.value.filter((request) => request.status !== 'Closed'))
+const displayName = (user: SystemUser) => {
+  const name = [user.firstName, user.lastName].filter(Boolean).join(' ')
+  return name || user.username
+}
+
+const filteredRequests = computed(() => {
+  let result = requests.value.filter((request) => request.status !== 'Closed')
+
+  if (teamFilter.value.length > 0) {
+    result = result.filter((request) => request.teamId != null && teamFilter.value.includes(request.teamId))
+  }
+
+  if (statusFilter.value.length > 0) {
+    result = result.filter((request) => statusFilter.value.includes(request.status))
+  }
+
+  if (assigneeFilter.value.length > 0) {
+    result = result.filter((request) => {
+      const assigneeId = request.agentId ?? 0
+      return assigneeFilter.value.includes(assigneeId)
+    })
+  }
+
+  return result
+})
 
 const loadRequests = async () => {
   loading.value = true
@@ -58,9 +112,7 @@ const loadRequests = async () => {
     const response = await requestApi.list({
       page: 0,
       size: 100,
-      search: keyword.value || undefined,
-      status: statusFilter.value || undefined,
-      teamId: teamFilter.value || undefined
+      search: keyword.value || undefined
     })
     requests.value = response.content
   } catch {
@@ -79,9 +131,19 @@ const loadTeams = async () => {
   }
 }
 
-watch([keyword, teamFilter, statusFilter], loadRequests)
+const loadUsers = async () => {
+  try {
+    const response = await userApi.list({ page: 0, size: 200, sort: 'username', status: 'active' })
+    users.value = response.content
+  } catch {
+    ElMessage.error('Unable to load users')
+  }
+}
+
+watch(keyword, loadRequests)
 onMounted(() => {
   loadTeams()
+  loadUsers()
   loadRequests()
 })
 </script>
@@ -94,7 +156,7 @@ onMounted(() => {
 
 .toolbar-row {
   display: grid;
-  grid-template-columns: minmax(280px, 1fr) 220px 180px;
+  grid-template-columns: minmax(280px, 1fr) 220px 180px 200px;
   gap: 12px;
   margin-bottom: 14px;
 }

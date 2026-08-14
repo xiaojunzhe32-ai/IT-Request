@@ -9,7 +9,7 @@
     >
       <el-table-column prop="requestNo" label="Request No." width="170" sortable show-overflow-tooltip>
         <template #default="{ row }">
-          <a class="request-no-link" @click="openRequest(row)">{{ row.requestNo }}</a>
+          <a href="javascript:void(0)" class="request-no-link" @click="openRequest(row)">{{ row.requestNo }}</a>
         </template>
       </el-table-column>
       <el-table-column label="Title" min-width="280" show-overflow-tooltip>

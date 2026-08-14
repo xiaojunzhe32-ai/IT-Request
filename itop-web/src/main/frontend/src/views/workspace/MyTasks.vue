@@ -28,7 +28,7 @@
             class="task-card"
           >
             <div class="task-card__top">
-              <a class="task-no-link" @click="router.push(`/workspace/requests/${request.id}`)">{{ request.requestNo }}</a>
+              <a href="javascript:void(0)" class="task-no-link" @click="router.push(`/workspace/requests/${request.id}`)">{{ request.requestNo }}</a>
               <PriorityTag :priority="request.priority" />
             </div>
             <h3>{{ request.title }}</h3>
