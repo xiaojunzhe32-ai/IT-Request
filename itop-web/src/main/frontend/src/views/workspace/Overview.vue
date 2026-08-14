@@ -82,7 +82,7 @@ const loading = ref(false)
 const requests = ref<WorkflowRequest[]>([])
 const canAssignRequests = computed(() => userStore.hasPermission('request:assign'))
 const activeRequests = computed(() => requests.value.filter((item) => item.status !== 'Closed'))
-const testingCount = computed(() => requests.value.filter((item) => item.status === 'Testing').length)
+const testingCount = computed(() => requests.value.filter((item) => item.status === 'To be test' || item.status === 'Testing').length)
 const failedCount = computed(() => requests.value.filter((item) => item.status === 'User Test Failed').length)
 
 const metrics = computed(() => [

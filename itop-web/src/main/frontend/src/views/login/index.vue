@@ -108,7 +108,7 @@ const userStore = useUserStore()
 const loginFormRef = ref<FormInstance>()
 const loading = ref(false)
 
-const flowStatuses = ['New', 'Assigned', 'In Progress', 'Testing', 'Resolved', 'Closed']
+const flowStatuses = ['New', 'Assigned', 'In Progress', 'To be test', 'Testing', 'Resolved', 'Closed']
 
 const serviceHighlights = [
   { title: 'Team visibility', text: 'Requests stay aligned with owning teams.' },

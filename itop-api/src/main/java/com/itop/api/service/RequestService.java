@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
 
 /**
  * 请求工作流服务：列表、详情、创建（含自动路由）、分配、状态流转、留言、历史。
- * 状态模型对齐前端：New / Assigned / In Progress / Testing / Resolved / User Test Failed / Closed。
+ * 状态模型对齐前端：New / Assigned / In Progress / To be test / Testing / Resolved / User Test Failed / Closed。
  */
 @Service
 @RequiredArgsConstructor
@@ -544,6 +544,7 @@ public class RequestService {
             case "New", "NEW" -> Ticket.TicketStatus.NEW;
             case "Assigned", "ASSIGNED" -> Ticket.TicketStatus.ASSIGNED;
             case "In Progress", "IN_PROGRESS" -> Ticket.TicketStatus.IN_PROGRESS;
+            case "To be test", "TO_BE_TEST" -> Ticket.TicketStatus.TO_BE_TEST;
             case "Testing", "TESTING" -> Ticket.TicketStatus.TESTING;
             case "Resolved", "RESOLVED" -> Ticket.TicketStatus.RESOLVED;
             case "User Test Failed", "USER_TEST_FAILED" -> Ticket.TicketStatus.USER_TEST_FAILED;
@@ -559,6 +560,7 @@ public class RequestService {
             case NEW -> "New";
             case ASSIGNED -> "Assigned";
             case IN_PROGRESS -> "In Progress";
+            case TO_BE_TEST -> "To be test";
             case TESTING -> "Testing";
             case RESOLVED -> "Resolved";
             case USER_TEST_FAILED -> "User Test Failed";

@@ -10,7 +10,7 @@ import java.util.List;
 
 /**
  * 请求 DTO，对齐前端 mockRequests 模型。
- * status 取值: New / Assigned / In Progress / Testing / Resolved / User Test Failed / Closed
+ * status 取值: New / Assigned / In Progress / To be test / Testing / Resolved / User Test Failed / Closed
  * priority 取值: Low / Medium / High / Critical
  */
 @Data

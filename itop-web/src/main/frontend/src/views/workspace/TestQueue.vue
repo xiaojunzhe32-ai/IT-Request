@@ -31,8 +31,11 @@ const testingRequests = ref<WorkflowRequest[]>([])
 const loadTestingRequests = async () => {
   loading.value = true
   try {
-    const response = await requestApi.list({ page: 0, size: 100, status: 'Testing' })
-    testingRequests.value = response.content
+    const [readyResponse, testingResponse] = await Promise.all([
+      requestApi.list({ page: 0, size: 100, status: 'To be test' }),
+      requestApi.list({ page: 0, size: 100, status: 'Testing' })
+    ])
+    testingRequests.value = [...readyResponse.content, ...testingResponse.content]
   } catch {
     ElMessage.error('Unable to load internal test queue')
   } finally {

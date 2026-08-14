@@ -120,6 +120,10 @@ public class DashboardController {
             "SELECT COUNT(*) FROM ticket WHERE final_class = 'UserRequest' AND ticket_status = 'IN_PROGRESS'", Long.class);
         stats.put("inProgressTickets", inProgressTickets);
 
+        Long toBeTestTickets = jdbcTemplate.queryForObject(
+            "SELECT COUNT(*) FROM ticket WHERE final_class = 'UserRequest' AND ticket_status = 'TO_BE_TEST'", Long.class);
+        stats.put("toBeTestTickets", toBeTestTickets);
+
         Long testingTickets = jdbcTemplate.queryForObject(
             "SELECT COUNT(*) FROM ticket WHERE final_class = 'UserRequest' AND ticket_status = 'TESTING'", Long.class);
         stats.put("testingTickets", testingTickets);

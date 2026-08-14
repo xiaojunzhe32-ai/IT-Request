@@ -16,6 +16,7 @@ export const statusColorMap: Record<RequestStatus, string> = {
   New: '#64748b',
   Assigned: '#2563eb',
   'In Progress': '#000080',
+  'To be test': '#4f46e5',
   Testing: '#7c3aed',
   Resolved: '#16a34a',
   'User Test Failed': '#dc2626',

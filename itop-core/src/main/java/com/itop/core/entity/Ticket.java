@@ -127,6 +127,7 @@ public abstract class Ticket extends BaseEntity {
         NEW,
         ASSIGNED,
         IN_PROGRESS,
+        TO_BE_TEST,
         TESTING,
         RESOLVED,
         USER_TEST_FAILED,

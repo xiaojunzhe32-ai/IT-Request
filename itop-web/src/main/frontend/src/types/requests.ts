@@ -2,6 +2,7 @@ export type RequestStatus =
   | 'New'
   | 'Assigned'
   | 'In Progress'
+  | 'To be test'
   | 'Testing'
   | 'Resolved'
   | 'User Test Failed'

@@ -210,7 +210,7 @@ public class RequestController {
     @PreAuthorize("@securityUtils.hasPermission('request:read')")
     public ResponseEntity<ApiResponse<List<String>>> getStatuses() {
         return ResponseEntity.ok(ApiResponse.success(List.of(
-                "New", "Assigned", "In Progress", "Testing", "Resolved", "User Test Failed", "Closed"
+                "New", "Assigned", "In Progress", "To be test", "Testing", "Resolved", "User Test Failed", "Closed"
         )));
     }
 
