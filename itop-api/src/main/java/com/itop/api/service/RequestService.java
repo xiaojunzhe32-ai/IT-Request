@@ -50,8 +50,8 @@ public class RequestService {
     // ---------- 查询 ----------
 
     @Transactional(readOnly = true)
-    public Page<RequestDTO> list(int page, int size, String status, String type, Long teamId,
-                                  String priority, Long orgId, String search, Long assigneeId, Long callerId) {
+    public Page<RequestDTO> list(int page, int size, List<String> statuses, String type, List<Long> teamIds,
+                                  String priority, Long orgId, String search, List<Long> assigneeIds, Long callerId) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
 
         Specification<Ticket> spec = (root, query, cb) -> {
@@ -75,23 +75,30 @@ public class RequestService {
                 }
             }
 
-            if (status != null && !status.isEmpty()) {
-                Ticket.TicketStatus statusEnum = parseStatusEnum(status);
-                if (statusEnum != null) {
-                    predicates.add(cb.equal(root.get("ticketStatus"), statusEnum));
-                }
+            List<Ticket.TicketStatus> statusEnums = parseStatusEnums(statuses);
+            if (!statusEnums.isEmpty()) {
+                predicates.add(root.get("ticketStatus").in(statusEnums));
             }
             if (type != null && !type.isEmpty()) {
                 predicates.add(cb.equal(root.get("name"), type));
             }
-            if (teamId != null) {
-                predicates.add(cb.equal(root.get("teamId"), teamId));
+            List<Long> filteredTeamIds = positiveIds(teamIds);
+            if (!filteredTeamIds.isEmpty()) {
+                predicates.add(root.get("teamId").in(filteredTeamIds));
             }
             if (priority != null && !priority.isEmpty()) {
                 predicates.add(cb.equal(root.get("priority"), normalizePriority(priority)));
             }
-            if (assigneeId != null) {
-                predicates.add(cb.equal(root.get("agentId"), assigneeId));
+            if (assigneeIds != null && !assigneeIds.isEmpty()) {
+                List<Long> assignedIds = positiveIds(assigneeIds);
+                boolean includeUnassigned = assigneeIds.stream().anyMatch(id -> id != null && id == 0L);
+                if (!assignedIds.isEmpty() && includeUnassigned) {
+                    predicates.add(cb.or(root.get("agentId").in(assignedIds), cb.isNull(root.get("agentId"))));
+                } else if (!assignedIds.isEmpty()) {
+                    predicates.add(root.get("agentId").in(assignedIds));
+                } else if (includeUnassigned) {
+                    predicates.add(cb.isNull(root.get("agentId")));
+                }
             }
             if (callerId != null) {
                 predicates.add(cb.equal(root.get("callerId"), callerId));
@@ -552,7 +559,27 @@ public class RequestService {
         };
     }
 
-    /** 枚举 -> 前端标签 */
+    /** Convert request status filter labels into enum values. */
+    private List<Ticket.TicketStatus> parseStatusEnums(List<String> labels) {
+        if (labels == null || labels.isEmpty()) return List.of();
+        return labels.stream()
+                .filter(label -> label != null && !label.isBlank())
+                .map(this::parseStatusEnum)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+    }
+
+    /** Keep only positive database IDs from filter values. */
+    private List<Long> positiveIds(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) return List.of();
+        return ids.stream()
+                .filter(id -> id != null && id > 0)
+                .distinct()
+                .toList();
+    }
+
+    /** Convert enum values into frontend labels. */
     public String statusLabel(Ticket.TicketStatus status) {
         if (status == null) return null;
         return switch (status) {

@@ -16,7 +16,25 @@ import type {
 
 export const requestApi = {
   list(params?: ListRequestsParams): Promise<PageResponse<WorkflowRequest>> {
-    return request.get('/requests', { params })
+    return request.get('/requests', {
+      params,
+      paramsSerializer: {
+        serialize: (values) => {
+          const searchParams = new URLSearchParams()
+          Object.entries(values).forEach(([key, value]) => {
+            if (value == null || value === '') return
+            if (Array.isArray(value)) {
+              value.forEach((item) => {
+                if (item != null && item !== '') searchParams.append(key, String(item))
+              })
+              return
+            }
+            searchParams.append(key, String(value))
+          })
+          return searchParams.toString()
+        }
+      }
+    })
   },
 
   getById(id: number): Promise<WorkflowRequest> {

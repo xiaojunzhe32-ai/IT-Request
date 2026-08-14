@@ -34,13 +34,13 @@ public class RequestController {
     public ResponseEntity<ApiResponse<PageResponse<RequestDTO>>> list(
             @RequestParam(name = "page", defaultValue = "0") int page,
             @RequestParam(name = "size", defaultValue = "20") int size,
-            @RequestParam(name = "status", required = false) String status,
+            @RequestParam(name = "status", required = false) List<String> status,
             @RequestParam(name = "type", required = false) String type,
-            @RequestParam(name = "teamId", required = false) Long teamId,
+            @RequestParam(name = "teamId", required = false) List<Long> teamId,
             @RequestParam(name = "priority", required = false) String priority,
             @RequestParam(name = "orgId", required = false) Long orgId,
             @RequestParam(name = "search", required = false) String search,
-            @RequestParam(name = "assigneeId", required = false) Long assigneeId,
+            @RequestParam(name = "assigneeId", required = false) List<Long> assigneeId,
             @RequestParam(name = "callerId", required = false) Long callerId) {
 
         Page<RequestDTO> result = requestService.list(page, size, status, type, teamId, priority,

@@ -108,12 +108,12 @@ export interface UpdateRequestDescriptionPayload {
 export interface ListRequestsParams {
   page?: number
   size?: number
-  status?: RequestStatus | string
+  status?: RequestStatus | RequestStatus[] | string | string[]
   type?: string
-  teamId?: number
+  teamId?: number | number[]
   priority?: RequestPriority | string
   search?: string
-  assigneeId?: number
+  assigneeId?: number | number[]
   callerId?: number
 }
 
