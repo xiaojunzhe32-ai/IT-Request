@@ -21,27 +21,21 @@
           <em>{{ module.total }}</em>
         </header>
 
-        <div class="task-module__lanes">
-          <section v-for="lane in module.lanes" :key="lane.title" class="task-lane">
-            <header class="task-lane__header">
-              <span>{{ lane.title }}</span>
-              <strong>{{ lane.items.length }}</strong>
-            </header>
-            <article
-              v-for="request in lane.items"
-              :key="request.id"
-              class="task-card"
-            >
-              <div class="task-card__top">
-                <a class="task-no-link" @click="router.push(`/workspace/requests/${request.id}`)">{{ request.requestNo }}</a>
-                <PriorityTag :priority="request.priority" />
-              </div>
-              <h3>{{ request.title }}</h3>
-              <p>{{ request.requester }} · {{ request.assignedTeam || 'Unassigned team' }}</p>
-              <RequestStatusTag :status="request.status" />
-            </article>
-            <div v-if="!lane.items.length" class="empty-column">No requests</div>
-          </section>
+        <div class="task-module__body">
+          <article
+            v-for="request in module.items"
+            :key="request.id"
+            class="task-card"
+          >
+            <div class="task-card__top">
+              <a class="task-no-link" @click="router.push(`/workspace/requests/${request.id}`)">{{ request.requestNo }}</a>
+              <PriorityTag :priority="request.priority" />
+            </div>
+            <h3>{{ request.title }}</h3>
+            <p>{{ request.requester }} · {{ request.assignedTeam || 'Unassigned team' }}</p>
+            <RequestStatusTag :status="request.status" />
+          </article>
+          <div v-if="!module.items.length" class="empty-column">No requests</div>
         </div>
       </section>
     </div>
@@ -70,57 +64,50 @@ const priorityRank: Record<WorkflowRequest['priority'], number> = {
   Low: 3
 }
 
+const statusRank: Record<WorkflowRequest['status'], number> = {
+  New: 0,
+  Assigned: 1,
+  'In Progress': 2,
+  'To be test': 3,
+  Testing: 4,
+  Resolved: 5,
+  'User Test Failed': 6,
+  Closed: 7
+}
+
 const sortTasks = (items: WorkflowRequest[]) => [...items].sort((left, right) => {
+  const statusDifference = statusRank[left.status] - statusRank[right.status]
+  if (statusDifference !== 0) return statusDifference
+
   const priorityDifference = priorityRank[left.priority] - priorityRank[right.priority]
   if (priorityDifference !== 0) return priorityDifference
 
   return new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime()
 })
 
-const assignedToMe = computed(() => sortTasks(requests.value.filter((item) => item.status !== 'Closed')))
-const completedRequests = computed(() => sortTasks(requests.value.filter((item) => item.status === 'Resolved' || item.status === 'Closed')))
-
 const taskModules = computed(() => {
-  const makeLane = (title: string, statuses: WorkflowRequest['status'][], source = assignedToMe.value) => ({
-    title,
-    items: source.filter((item) => statuses.includes(item.status))
-  })
+  const makeModule = (
+    title: string,
+    description: string,
+    accent: string,
+    statuses: WorkflowRequest['status'][]
+  ) => {
+    const items = sortTasks(requests.value.filter((item) => statuses.includes(item.status)))
 
-  const modules = [
-    {
-      title: 'Work in Hand',
-      description: 'Assigned and active implementation',
-      accent: '#000080',
-      lanes: [
-        makeLane('Assigned', ['Assigned']),
-        makeLane('In Progress', ['In Progress'])
-      ]
-    },
-    {
-      title: 'Test Readiness',
-      description: 'Ready for test and internal validation',
-      accent: '#4f46e5',
-      lanes: [
-        makeLane('To be test', ['To be test']),
-        makeLane('Testing', ['Testing'])
-      ]
-    },
-    {
-      title: 'Feedback & Closure',
-      description: 'Resolved, returned or closed requests',
-      accent: '#0f766e',
-      lanes: [
-        makeLane('Resolved', ['Resolved'], completedRequests.value),
-        makeLane('User Test Failed', ['User Test Failed']),
-        makeLane('Closed', ['Closed'], completedRequests.value)
-      ]
+    return {
+      title,
+      description,
+      accent,
+      items,
+      total: items.length
     }
-  ]
+  }
 
-  return modules.map((module) => ({
-    ...module,
-    total: module.lanes.reduce((sum, lane) => sum + lane.items.length, 0)
-  }))
+  return [
+    makeModule('Work in Hand', 'Assigned and active implementation', '#000080', ['Assigned', 'In Progress']),
+    makeModule('Test Readiness', 'Ready for test and internal validation', '#4f46e5', ['To be test', 'Testing']),
+    makeModule('Feedback & Closure', 'Resolved, returned or closed requests', '#0f766e', ['Resolved', 'User Test Failed', 'Closed'])
+  ]
 })
 
 const loadTasks = async () => {
@@ -206,46 +193,14 @@ onMounted(loadTasks)
   font-weight: 800;
 }
 
-.task-module__lanes {
+.task-module__body {
   display: grid;
-  gap: 16px;
-}
-
-.task-lane {
-  display: grid;
-  gap: 10px;
-}
-
-.task-lane__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 0 2px 2px;
-}
-
-.task-lane__header span {
-  color: #111827;
-  font-size: 13px;
-  font-weight: 800;
-}
-
-.task-lane__header strong {
-  display: grid;
-  place-items: center;
-  min-width: 22px;
-  height: 22px;
-  padding: 0 7px;
-  border-radius: 999px;
-  background: #eef2ff;
-  color: var(--module-accent);
-  font-size: 12px;
+  gap: 12px;
 }
 
 .task-card {
   display: grid;
   gap: 10px;
-  margin-bottom: 12px;
   padding: 14px;
   border-radius: 10px;
   background: #f8fafc;
