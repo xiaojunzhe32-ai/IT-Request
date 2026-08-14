@@ -79,11 +79,11 @@
             </div>
             <div class="info-cell">
               <span class="info-label">Tester</span>
-              <span class="info-value">{{ request.tester }}</span>
+              <span class="info-value">{{ request.tester || '-' }}</span>
             </div>
-            <div v-if="request.affectedService" class="info-cell">
+            <div class="info-cell">
               <span class="info-label">Affected Service</span>
-              <span class="info-value">{{ affectedServiceLabel(request.affectedService) }}</span>
+              <span class="info-value">{{ request.affectedService ? affectedServiceLabel(request.affectedService) : '-' }}</span>
             </div>
             <div class="info-cell">
               <span class="info-label">Occurrence Time</span>
@@ -825,6 +825,7 @@ onBeforeUnmount(() => {
 .detail-side {
   display: grid;
   gap: 16px;
+  min-width: 0;
 }
 
 .state-editor {
@@ -880,6 +881,27 @@ onBeforeUnmount(() => {
   gap: 8px;
   color: #111827;
   line-height: 1.6;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  min-width: 0;
+}
+
+.rich-description :deep(a) {
+  word-break: break-all;
+}
+
+.rich-description :deep(table) {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+}
+
+.rich-description :deep(th),
+.rich-description :deep(td) {
+  padding: 6px 10px;
+  border: 1px solid #e5e7eb;
+  text-align: left;
 }
 
 .rich-description :deep(img) {
@@ -904,7 +926,7 @@ onBeforeUnmount(() => {
 
 .description-window {
   max-height: 600px;
-  overflow-y: auto;
+  overflow: auto;
   padding: 4px;
   border-radius: 8px;
 }
