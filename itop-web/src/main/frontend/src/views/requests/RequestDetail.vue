@@ -89,19 +89,19 @@
 
     <div class="detail-layout">
       <main class="detail-main">
-        <section v-if="request.description || safeDescriptionHtml || imageAttachments.length || nonImageAttachments.length" class="work-section description-section">
+        <section v-if="request.description || safeDescriptionHtml || visibleImageAttachments.length || nonImageAttachments.length" class="work-section description-section">
           <div class="work-section__header">
             <h2>Description</h2>
             <span>Requester-submitted problem details</span>
           </div>
 
-          <div v-if="request.description || safeDescriptionHtml || imageAttachments.length" class="section-block" style="border-top: none; margin-top: 0; padding-top: 0;">
+          <div v-if="request.description || safeDescriptionHtml || visibleImageAttachments.length" class="section-block" style="border-top: none; margin-top: 0; padding-top: 0;">
             <div class="description-window">
               <div v-if="safeDescriptionHtml" ref="descriptionRef" class="rich-description" v-html="safeDescriptionHtml" @click="handleDescriptionClick" />
               <span v-else-if="request.description" class="description-text">{{ request.description }}</span>
-              <div v-if="imageAttachments.length" class="description-images">
+              <div v-if="visibleImageAttachments.length" class="description-images">
                 <el-image
-                  v-for="attachment in imageAttachments"
+                  v-for="attachment in visibleImageAttachments"
                   :key="attachment.id"
                   :src="imageUrls[attachment.id]"
                   :preview-src-list="imagePreviewList"
@@ -357,6 +357,7 @@ const pendingLeaveAction = ref<(() => void) | null>(null)
 let allowRouteLeave = false
 let inlineBlobUrls: string[] = []
 const imageUrls = ref<Record<number, string>>({})
+const inlineDescriptionImageIds = ref<Set<number>>(new Set())
 
 const isImage = (attachment: RequestAttachment) => {
   const type = attachment.contentType || ''
@@ -368,18 +369,22 @@ const imageAttachments = computed(() =>
   (request.value.attachments || []).filter(isImage)
 )
 
+const visibleImageAttachments = computed(() =>
+  imageAttachments.value.filter((attachment) => !inlineDescriptionImageIds.value.has(attachment.id))
+)
+
 const nonImageAttachments = computed(() =>
   (request.value.attachments || []).filter((a) => !isImage(a))
 )
 
 const imagePreviewList = computed(() =>
-  imageAttachments.value
+  visibleImageAttachments.value
     .map((a) => imageUrls.value[a.id])
     .filter(Boolean) as string[]
 )
 
 const imagePreviewIndex = (id: number) => {
-  const idx = imageAttachments.value.findIndex((a) => a.id === id)
+  const idx = visibleImageAttachments.value.findIndex((a) => a.id === id)
   return idx >= 0 ? idx : 0
 }
 
@@ -539,14 +544,17 @@ const hydrateDescriptionImages = async () => {
   const html = sanitizeRequestHtml(request.value.descriptionHtml || '')
   if (!html) {
     safeDescriptionHtml.value = ''
+    inlineDescriptionImageIds.value = new Set()
     return
   }
   const template = document.createElement('template')
   template.innerHTML = html
   const images = Array.from(template.content.querySelectorAll<HTMLImageElement>('img[data-attachment-id]'))
+  const inlineIds = new Set<number>()
   await Promise.all(images.map(async (image) => {
     const attachmentId = Number(image.dataset.attachmentId)
     if (!attachmentId) return
+    inlineIds.add(attachmentId)
     try {
       const blob = await attachmentApi.download(attachmentId)
       const url = URL.createObjectURL(blob)
@@ -556,6 +564,7 @@ const hydrateDescriptionImages = async () => {
       image.replaceWith(document.createTextNode(`[Image attachment ${attachmentId} unavailable]`))
     }
   }))
+  inlineDescriptionImageIds.value = inlineIds
   safeDescriptionHtml.value = template.innerHTML
 }
 
