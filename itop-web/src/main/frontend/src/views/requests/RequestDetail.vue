@@ -94,9 +94,19 @@
               <span class="info-value">{{ request.requestedResolutionTime ? formatDateTime(request.requestedResolutionTime) : '-' }}</span>
             </div>
           </div>
+        </el-card>
 
-          <div v-if="request.description || safeDescriptionHtml || imageAttachments.length" class="section-block">
-            <div class="section-label">Description</div>
+        <el-card v-if="request.description || safeDescriptionHtml || imageAttachments.length || nonImageAttachments.length" class="surface-card" shadow="never">
+          <template #header>
+            <div class="card-title-row">
+              <div>
+                <strong>Description</strong>
+                <span>Requester-submitted problem details</span>
+              </div>
+            </div>
+          </template>
+
+          <div v-if="request.description || safeDescriptionHtml || imageAttachments.length" class="section-block" style="border-top: none; margin-top: 0; padding-top: 0;">
             <div class="description-window">
               <div v-if="safeDescriptionHtml" ref="descriptionRef" class="rich-description" v-html="safeDescriptionHtml" @click="handleDescriptionClick" />
               <span v-else-if="request.description" class="description-text">{{ request.description }}</span>
@@ -836,7 +846,7 @@ onBeforeUnmount(() => {
 }
 
 .state-current {
-  min-height: 84px;
+  min-height: 56px;
   display: grid;
   align-content: center;
   gap: 10px;
@@ -925,8 +935,8 @@ onBeforeUnmount(() => {
 }
 
 .description-window {
-  max-height: 600px;
-  overflow: auto;
+  max-height: none;
+  overflow: visible;
   padding: 4px;
   border-radius: 8px;
 }
