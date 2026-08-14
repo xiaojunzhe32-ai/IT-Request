@@ -59,6 +59,23 @@
             />
           </el-select>
         </div>
+        <div class="work-meta-field work-meta-field--assignment">
+          <span class="meta-label">Assignment</span>
+          <el-select
+            v-model="assignment.teamId"
+            :disabled="portalMode"
+            filterable
+            placeholder="Select team"
+            class="team-select"
+          >
+            <el-option
+              v-for="team in teamOptions"
+              :key="team.id"
+              :label="team.name"
+              :value="team.id"
+            />
+          </el-select>
+        </div>
         <div class="work-meta-field">
           <span class="meta-label">Priority</span>
           <span class="meta-value"><PriorityTag :priority="request.priority" /></span>
@@ -66,10 +83,6 @@
         <div class="work-meta-field">
           <span class="meta-label">Type</span>
           <span class="meta-value">{{ requestTypeLabel(request.type) }}</span>
-        </div>
-        <div class="work-meta-field">
-          <span class="meta-label">Team</span>
-          <span class="meta-value">{{ selectedTeam?.name || request.assignedTeam || '-' }}</span>
         </div>
       </div>
     </section>
@@ -223,37 +236,6 @@
             </div>
           </div>
 
-          <div class="inspector-section">
-            <div class="inspector-title">Assignment</div>
-            <el-form label-position="top" class="side-form">
-              <el-form-item label="Team">
-                <el-select
-                  v-model="assignment.teamId"
-                  :disabled="portalMode"
-                  filterable
-                  placeholder="Select team"
-                >
-                  <el-option
-                    v-for="team in teamOptions"
-                    :key="team.id"
-                    :label="team.name"
-                    :value="team.id"
-                  />
-                </el-select>
-              </el-form-item>
-            </el-form>
-            <div class="field-list field-list--compact">
-              <div class="field-row">
-                <span>Assignee</span>
-                <strong>{{ selectedAssignee?.name || request.assignee || 'Unassigned' }}</strong>
-              </div>
-              <div class="field-row">
-                <span>Workflow</span>
-                <strong>{{ workflowInstruction }}</strong>
-              </div>
-            </div>
-          </div>
-
           <div class="inspector-section history-section">
             <div class="inspector-title">
               <span>History</span>
@@ -289,7 +271,7 @@
       :close-on-press-escape="false"
     >
       <p class="unsaved-copy">
-        You changed the workflow status or assignee but have not saved it yet.
+        You changed the workflow status, team or assignee but have not saved it yet.
       </p>
       <template #footer>
         <el-button @click="cancelPendingLeave">Cancel</el-button>
@@ -443,10 +425,6 @@ const visibleStatusOptions = computed<RequestStatus[]>(() => {
   }
   return [request.value.status]
 })
-const workflowInstruction = computed(() => portalMode.value
-  ? 'Confirm the result after the request is resolved'
-  : 'Select any status, then save at page level')
-
 const assignment = reactive({
   teamId: undefined as number | undefined,
   assigneeId: undefined as number | undefined
@@ -1411,7 +1389,8 @@ onBeforeUnmount(() => {
 }
 
 .owner-select :deep(.el-select__wrapper),
-.state-select :deep(.el-select__wrapper) {
+.state-select :deep(.el-select__wrapper),
+.team-select :deep(.el-select__wrapper) {
   min-height: 34px;
   border-radius: 6px;
   background: #fff;
@@ -1432,7 +1411,7 @@ onBeforeUnmount(() => {
 
 .work-meta-strip {
   display: grid;
-  grid-template-columns: minmax(260px, 0.9fr) repeat(3, minmax(150px, 1fr));
+  grid-template-columns: minmax(250px, 0.95fr) minmax(280px, 1fr) minmax(150px, 0.7fr) minmax(140px, 0.7fr);
   gap: 18px;
   align-items: center;
   padding: 14px 20px;
@@ -1452,6 +1431,10 @@ onBeforeUnmount(() => {
   grid-template-columns: 44px minmax(0, 230px);
 }
 
+.work-meta-field--assignment {
+  grid-template-columns: 82px minmax(0, 250px);
+}
+
 .meta-label {
   color: #6b7280;
   font-size: 13px;
@@ -1468,7 +1451,8 @@ onBeforeUnmount(() => {
   white-space: nowrap;
 }
 
-.state-select {
+.state-select,
+.team-select {
   width: 100%;
 }
 
@@ -1592,11 +1576,6 @@ onBeforeUnmount(() => {
   gap: 14px;
 }
 
-.field-list--compact {
-  gap: 12px;
-  margin-top: 12px;
-}
-
 .field-row {
   display: grid;
   gap: 4px;
@@ -1616,16 +1595,6 @@ onBeforeUnmount(() => {
   font-size: 13px;
   font-weight: 650;
   line-height: 1.45;
-}
-
-.side-form :deep(.el-form-item) {
-  margin-bottom: 0;
-}
-
-.side-form :deep(.el-form-item__label) {
-  color: #98a2b3;
-  font-size: 12px;
-  font-weight: 650;
 }
 
 .history-section {
@@ -1701,7 +1670,8 @@ onBeforeUnmount(() => {
   }
 
   .work-meta-field,
-  .work-meta-field--state {
+  .work-meta-field--state,
+  .work-meta-field--assignment {
     grid-template-columns: 86px minmax(0, 1fr);
   }
 
