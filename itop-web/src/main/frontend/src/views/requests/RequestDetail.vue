@@ -15,6 +15,39 @@
 
     <div class="detail-layout">
       <main class="detail-main">
+        <el-card v-if="request.description || safeDescriptionHtml || imageAttachments.length || nonImageAttachments.length" class="surface-card description-card" shadow="never">
+          <template #header>
+            <div class="card-title-row">
+              <div>
+                <strong>Description</strong>
+                <span>Requester-submitted problem details</span>
+              </div>
+            </div>
+          </template>
+
+          <div v-if="request.description || safeDescriptionHtml || imageAttachments.length" class="section-block" style="border-top: none; margin-top: 0; padding-top: 0;">
+            <div class="description-window">
+              <div v-if="safeDescriptionHtml" ref="descriptionRef" class="rich-description" v-html="safeDescriptionHtml" @click="handleDescriptionClick" />
+              <span v-else-if="request.description" class="description-text">{{ request.description }}</span>
+            </div>
+          </div>
+
+          <div v-if="nonImageAttachments.length" class="section-block">
+            <div class="section-label">Attachments</div>
+            <div class="detail-attachment-list">
+              <div
+                v-for="attachment in nonImageAttachments"
+                :key="attachment.id"
+                class="attachment-row"
+              >
+                <el-icon class="attachment-icon"><Document /></el-icon>
+                <span class="attachment-name" :title="attachment.originalName">{{ attachment.originalName }}</span>
+                <el-button text size="small" @click="downloadAttachment(attachment)">Download</el-button>
+              </div>
+            </div>
+          </div>
+        </el-card>
+
         <el-card class="surface-card" shadow="never">
           <template #header>
             <div class="card-title-row">
@@ -92,39 +125,6 @@
             <div class="info-cell">
               <span class="info-label">Resolution Time</span>
               <span class="info-value">{{ request.requestedResolutionTime ? formatDateTime(request.requestedResolutionTime) : '-' }}</span>
-            </div>
-          </div>
-        </el-card>
-
-        <el-card v-if="request.description || safeDescriptionHtml || imageAttachments.length || nonImageAttachments.length" class="surface-card" shadow="never">
-          <template #header>
-            <div class="card-title-row">
-              <div>
-                <strong>Description</strong>
-                <span>Requester-submitted problem details</span>
-              </div>
-            </div>
-          </template>
-
-          <div v-if="request.description || safeDescriptionHtml || imageAttachments.length" class="section-block" style="border-top: none; margin-top: 0; padding-top: 0;">
-            <div class="description-window">
-              <div v-if="safeDescriptionHtml" ref="descriptionRef" class="rich-description" v-html="safeDescriptionHtml" @click="handleDescriptionClick" />
-              <span v-else-if="request.description" class="description-text">{{ request.description }}</span>
-            </div>
-          </div>
-
-          <div v-if="nonImageAttachments.length" class="section-block">
-            <div class="section-label">Attachments</div>
-            <div class="detail-attachment-list">
-              <div
-                v-for="attachment in nonImageAttachments"
-                :key="attachment.id"
-                class="attachment-row"
-              >
-                <el-icon class="attachment-icon"><Document /></el-icon>
-                <span class="attachment-name" :title="attachment.originalName">{{ attachment.originalName }}</span>
-                <el-button text size="small" @click="downloadAttachment(attachment)">Download</el-button>
-              </div>
             </div>
           </div>
         </el-card>
@@ -935,6 +935,7 @@ onBeforeUnmount(() => {
 }
 
 .description-window {
+  min-height: 320px;
   max-height: none;
   overflow: visible;
   padding: 4px;
