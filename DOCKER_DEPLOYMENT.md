@@ -114,8 +114,6 @@ JAVA_OPTS=-Xms512m -Xmx1024m -XX:+UseG1GC
 # 恢复数据库
 ./deploy.sh restore-db itop_backup_20240115_103045.sql
 
-# 初始化数据库
-./deploy.sh init-db
 ```
 
 ### 清理

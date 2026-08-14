@@ -42,6 +42,9 @@ ponytail/
 # local/generated handoff artifacts
 upload-restriction-proposal/
 
+# local database bootstrap scripts; production schema uses Flyway migrations
+/init-db/
+
 # root-level scratch copies; keep canonical sources under module folders
 /RequestService.java
 /SecurityUtils.java

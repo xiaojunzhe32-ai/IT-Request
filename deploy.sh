@@ -137,13 +137,6 @@ restore_db() {
     log_success "Database restored."
 }
 
-# Initialize database
-init_db() {
-    log_info "Initializing database..."
-    docker-compose exec -T postgres psql -U itop itop < init-db/01-init-permissions.sql
-    log_success "Database initialized."
-}
-
 # Show help
 show_help() {
     echo "iTop Java Deployment Script"
@@ -160,7 +153,6 @@ show_help() {
     echo "  clean        Remove all containers, volumes, and images"
     echo "  backup-db    Backup database"
     echo "  restore-db   Restore database from backup file"
-    echo "  init-db      Initialize database"
     echo "  help         Show this help message"
     echo ""
     echo "Examples:"
@@ -201,9 +193,6 @@ case "$1" in
         ;;
     restore-db)
         restore_db "$2"
-        ;;
-    init-db)
-        init_db
         ;;
     help|--help|-h|"")
         show_help

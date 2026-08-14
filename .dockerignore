@@ -4,6 +4,7 @@ docker-compose.override.yml
 
 # Docker volumes
 postgres_data/
+init-db/
 
 # Backup files
 *.sql
