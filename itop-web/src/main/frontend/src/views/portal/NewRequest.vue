@@ -206,7 +206,7 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import { Document, Plus, UploadFilled } from '@element-plus/icons-vue'
@@ -221,6 +221,11 @@ import { useCodeTableStore } from '@/stores/codeTables'
 import type { RequestAttachment, RequestPriority } from '@/types/requests'
 
 const router = useRouter()
+const route = useRoute()
+const workspaceMode = computed(() => route.path.startsWith('/workspace'))
+const cancelPath = computed(() => workspaceMode.value ? '/requests' : '/portal')
+const detailPath = (id: number) => workspaceMode.value ? `/workspace/requests/${id}` : `/portal/requests/${id}`
+const requestOrigin = computed(() => workspaceMode.value ? 'admin' : 'portal')
 const codeTableStore = useCodeTableStore()
 const formRef = ref<FormInstance>()
 const editorRef = ref<HTMLElement>()
@@ -475,7 +480,7 @@ const submitRequest = async () => {
         })
       }
       ElMessage.success('Request submitted')
-      router.push(`/portal/requests/${created.id}`)
+      router.push(detailPath(created.id))
     } finally {
       submitting.value = false
     }

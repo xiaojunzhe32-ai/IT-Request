@@ -2,7 +2,7 @@
   <div class="admin-page">
     <PageHeader eyebrow="Admin Console" title="Requests" description="Global request control view for admins and technical leads.">
       <template #actions>
-        <el-button type="primary" @click="router.push('/portal/new-request')">
+        <el-button type="primary" @click="router.push('/workspace/new-request')">
           <el-icon><Plus /></el-icon>
           New Request
         </el-button>

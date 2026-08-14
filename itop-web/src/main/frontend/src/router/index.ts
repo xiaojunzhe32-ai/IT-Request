@@ -82,6 +82,12 @@ const routes: RouteRecordRaw[] = [
         meta: { title: 'Assignment Desk', icon: 'Connection', permission: 'request:assign' }
       },
       {
+        path: 'workspace/new-request',
+        name: 'WorkspaceNewRequest',
+        component: () => import('@/views/portal/NewRequest.vue'),
+        meta: { title: 'New Request', icon: 'Plus', permission: 'request:write' }
+      },
+      {
         path: 'workspace/requests/:id',
         name: 'WorkspaceRequestDetail',
         component: () => import('@/views/requests/RequestDetail.vue'),
