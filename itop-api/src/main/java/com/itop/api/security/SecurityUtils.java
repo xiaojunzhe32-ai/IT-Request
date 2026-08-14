@@ -36,7 +36,7 @@ public class SecurityUtils {
 
     public static final String ALL_PERMISSIONS = "ALL_PERMISSIONS";
     public static final String ROLE_PREFIX = "ROLE_";
-    public static final String ITMD_TEAM_CODE = "ITMD";
+    public static final String ITMD_TEAM_TYPE = "ITMD";
 
     private final UserRepository userRepository;
     private final UserAccessibleOrgRepository userAccessibleOrgRepository;
@@ -265,7 +265,7 @@ public class SecurityUtils {
     }
 
     /**
-     * 判断当前用户是否属于 ITMD 团队（可见全部工单）。
+     * 判断当前用户是否属于 ITMD 性质团队（可见所有 ITMD 性质团队工单）。
      */
     public boolean isITMDTeam() {
         Set<Long> teamIds = getCurrentUserTeamIds();
@@ -273,28 +273,42 @@ public class SecurityUtils {
             return false;
         }
         return teamRepository.findAllById(teamIds).stream()
-                .anyMatch(t -> ITMD_TEAM_CODE.equals(t.getTeamCode()));
+                .anyMatch(t -> ITMD_TEAM_TYPE.equalsIgnoreCase(t.getTeamType()));
+    }
+
+    public Set<Long> getITMDTeamIds() {
+        return teamRepository.findByTeamTypeIgnoreCase(ITMD_TEAM_TYPE).stream()
+                .map(Team::getId)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+    }
+
+    public boolean canTransferToTeam(Long targetTeamId) {
+        if (isAdmin()) return true;
+        if (targetTeamId == null) return true;
+        if (isITMDTeam()) return getITMDTeamIds().contains(targetTeamId);
+        return getCurrentUserTeamIds().contains(targetTeamId);
     }
 
     /**
      * 判断当前用户是否能访问指定团队的工单。
      * - Admin：可见全部
-     * - ITMD 团队成员：可见全部
+     * - ITMD 团队成员：可见所有 ITMD 性质团队工单
      * - 其他用户：仅可见自己所属团队
      *
-     * @param targetTeamId 工单所属团队 ID（null 视为无团队，仅 Admin/ITMD 可访问）
+     * @param targetTeamId 工单所属团队 ID（null 视为无团队，仅 Admin 可访问）
      */
     public boolean canAccessTeamTickets(Long targetTeamId) {
         if (isAdmin()) return true;
-        if (isITMDTeam()) return true;
         if (targetTeamId == null) return false;
+        if (isITMDTeam()) return getITMDTeamIds().contains(targetTeamId);
         Set<Long> myTeamIds = getCurrentUserTeamIds();
         return myTeamIds.contains(targetTeamId);
     }
 
     /**
      * 判断当前用户是否能访问指定工单（基于团队 + 提单人）。
-     * - Admin / ITMD：可见全部
+     * - Admin：可见全部
+     * - ITMD：可见所有 ITMD 性质团队工单
      * - 其他用户：工单所属团队 ∈ 自己的团队，或工单提单人 ∈ 自己团队的成员
      *
      * @param teamId   工单所属团队 ID
@@ -302,7 +316,7 @@ public class SecurityUtils {
      */
     public boolean canAccessTicket(Long teamId, Long callerId) {
         if (isAdmin()) return true;
-        if (isITMDTeam()) return true;
+        if (isITMDTeam() && teamId != null && getITMDTeamIds().contains(teamId)) return true;
         Set<Long> myTeamIds = getCurrentUserTeamIds();
         if (teamId != null && myTeamIds.contains(teamId)) return true;
         if (callerId != null && !myTeamIds.isEmpty()) {
@@ -314,12 +328,13 @@ public class SecurityUtils {
 
     /**
      * 获取当前用户可访问的工单团队 ID 集合。
-     * - 返回 null 表示不做团队过滤（Admin 或 ITMD 团队，可见全部）
+     * - 返回 null 表示不做团队过滤（Admin，可见全部）
+     * - ITMD 返回所有 ITMD 性质团队 ID
      * - 返回非空 Set 表示仅可见这些团队的工单
      */
     public Set<Long> getAccessibleTeamIds() {
         if (isAdmin()) return null;
-        if (isITMDTeam()) return null;
+        if (isITMDTeam()) return getITMDTeamIds();
         return getCurrentUserTeamIds();
     }
 }

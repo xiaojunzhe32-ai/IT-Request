@@ -208,6 +208,21 @@
             </div>
           </template>
           <el-form label-position="top">
+            <el-form-item label="Team">
+              <el-select
+                v-model="assignment.teamId"
+                :disabled="portalMode"
+                filterable
+                placeholder="Select team"
+              >
+                <el-option
+                  v-for="team in teamOptions"
+                  :key="team.id"
+                  :label="team.name"
+                  :value="team.id"
+                />
+              </el-select>
+            </el-form-item>
             <el-form-item label="Assignee">
               <el-select
                 v-model="assignment.assigneeId"
@@ -301,11 +316,11 @@ import PriorityTag from '@/components/PriorityTag.vue'
 import RequestStatusTag from '@/components/RequestStatusTag.vue'
 import { requestApi } from '@/api/requests'
 import { attachmentApi } from '@/api/attachments'
-import { userApi } from '@/api/system'
+import { teamApi, userApi } from '@/api/system'
 import { requestStatuses, sanitizeRequestHtml } from '@/data/requestOptions'
 import { useCodeTableStore } from '@/stores/codeTables'
 import type { RequestAttachment, RequestHistoryItem, RequestStatus, WorkflowRequest } from '@/types/requests'
-import type { SystemUser } from '@/types/system'
+import type { Team, SystemUser } from '@/types/system'
 import { formatDateTime } from '@/utils/format'
 import { validateFile, validateBatch, ACCEPT_ATTR } from '@/utils/uploadValidation'
 
@@ -341,6 +356,7 @@ const request = ref<WorkflowRequest>({
   history: []
 })
 const users = ref<SystemUser[]>([])
+const teams = ref<Team[]>([])
 const loading = ref(false)
 const commentText = ref('')
 const internalComment = ref(false)
@@ -429,6 +445,7 @@ const workflowInstruction = computed(() => portalMode.value
   : 'Select any status, then save at page level')
 
 const assignment = reactive({
+  teamId: undefined as number | undefined,
   assigneeId: undefined as number | undefined
 })
 
@@ -436,6 +453,18 @@ const displayUserName = (user: SystemUser) => {
   const fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim()
   return fullName || user.username
 }
+
+const teamOptions = computed<Team[]>(() => {
+  const items = new Map<number, Team>()
+  teams.value.forEach((team) => items.set(team.id, team))
+  if (request.value.teamId && !items.has(request.value.teamId)) {
+    items.set(request.value.teamId, {
+      id: request.value.teamId,
+      name: request.value.assignedTeam || `Team ${request.value.teamId}`
+    })
+  }
+  return Array.from(items.values())
+})
 
 const assigneeOptions = computed<AssigneeOption[]>(() => {
   const assignableRoles = new Set(['ADMIN', 'TEAM_LEAD', 'TECHNICIAN'])
@@ -463,12 +492,17 @@ const assigneeOptions = computed<AssigneeOption[]>(() => {
   return Array.from(people.values())
 })
 
+const selectedTeam = computed(() =>
+  teamOptions.value.find((team) => team.id === assignment.teamId)
+)
 const selectedAssignee = computed(() =>
   assigneeOptions.value.find((person) => person.id === assignment.assigneeId)
 )
 
 const hasStatusChange = computed(() => statusDraft.value !== request.value.status)
-const hasAssignmentChange = computed(() => assignment.assigneeId !== request.value.agentId)
+const hasTeamChange = computed(() => assignment.teamId !== request.value.teamId)
+const hasAssigneeChange = computed(() => assignment.assigneeId !== request.value.agentId)
+const hasAssignmentChange = computed(() => hasTeamChange.value || hasAssigneeChange.value)
 const hasUnsavedChanges = computed(() => hasStatusChange.value || hasAssignmentChange.value)
 const safeDescriptionHtml = ref('')
 
@@ -550,6 +584,7 @@ const handleDescriptionClick = (event: MouseEvent) => {
 
 const syncDraftsFromRequest = () => {
   statusDraft.value = request.value.status
+  assignment.teamId = request.value.teamId
   assignment.assigneeId = request.value.agentId
 }
 
@@ -564,6 +599,16 @@ const loadRequest = async () => {
     ElMessage.error('Unable to load request detail')
   } finally {
     loading.value = false
+  }
+}
+
+const loadTeams = async () => {
+  if (portalMode.value) return
+  try {
+    const response = await teamApi.list({ page: 0, size: 100, sort: 'name', type: 'ITMD' })
+    teams.value = response.content
+  } catch {
+    ElMessage.error('Unable to load team options')
   }
 }
 
@@ -588,10 +633,16 @@ const saveStatusChange = async () => {
 
 const saveAssignmentChange = async () => {
   if (!hasAssignmentChange.value) return
-  if (!selectedAssignee.value) {
+  if (hasTeamChange.value && !selectedTeam.value) {
+    throw new Error('Please select a valid team')
+  }
+  if (hasAssigneeChange.value && assignment.assigneeId && !selectedAssignee.value) {
     throw new Error('Please select a valid assignee')
   }
-  request.value = await requestApi.assign(request.value.id, { agentId: selectedAssignee.value.id })
+  request.value = await requestApi.assign(request.value.id, {
+    teamId: assignment.teamId,
+    agentId: assignment.assigneeId
+  })
 }
 
 const saveAllChanges = async () => {
@@ -746,6 +797,7 @@ onMounted(() => {
   window.addEventListener('beforeunload', handleBeforeUnload)
   codeTableStore.ensureTables('REQUEST_TYPE', 'AFFECTED_SERVICE').catch(() => undefined)
   loadRequest()
+  loadTeams()
   loadUsers()
 })
 

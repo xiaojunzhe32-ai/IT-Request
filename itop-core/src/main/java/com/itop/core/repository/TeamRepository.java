@@ -28,7 +28,11 @@ public interface TeamRepository extends JpaRepository<Team, Long>,
 
     List<Team> findByTeamType(String teamType);
 
+    List<Team> findByTeamTypeIgnoreCase(String teamType);
+
     Page<Team> findByTeamType(String teamType, Pageable pageable);
+
+    Page<Team> findByTeamTypeIgnoreCase(String teamType, Pageable pageable);
 
     List<Team> findByLeaderId(Long leaderId);
 

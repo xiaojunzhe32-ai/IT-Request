@@ -53,7 +53,7 @@ public class TeamController {
         if (orgId != null) {
             teamPage = teamRepository.findByOrganizationId(orgId, pageable);
         } else if (type != null && !type.isEmpty()) {
-            teamPage = teamRepository.findByTeamType(type, pageable);
+            teamPage = teamRepository.findByTeamTypeIgnoreCase(type, pageable);
         } else {
             teamPage = teamRepository.findAll(pageable);
         }
