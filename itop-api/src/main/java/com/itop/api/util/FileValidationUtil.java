@@ -14,11 +14,10 @@ public class FileValidationUtil {
     private static final long MAX_FILE_SIZE = 20 * 1024 * 1024L;
 
     private static final Set<String> ALLOWED_EXTENSIONS = Set.of(
-        "png", "jpg", "jpeg", "gif", "bmp", "svg",
+        "png", "jpg", "jpeg", "gif", "bmp",
         "pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx",
         "txt", "log", "csv", "md",
-        "zip", "7z", "gz", "tar",
-        "html"
+        "zip", "7z", "gz", "tar"
     );
 
     private static final Map<String, byte[]> DANGEROUS_MAGIC = Map.of(

@@ -54,7 +54,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue'
+import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Plus, Search } from '@element-plus/icons-vue'
@@ -75,6 +75,7 @@ const loading = ref(false)
 const filteredRequests = ref<WorkflowRequest[]>([])
 const teams = ref<Team[]>([])
 const users = ref<SystemUser[]>([])
+let keywordTimer: ReturnType<typeof window.setTimeout> | undefined
 
 const displayName = (user: SystemUser) => {
   const name = [user.firstName, user.lastName].filter(Boolean).join(' ')
@@ -118,7 +119,12 @@ const loadUsers = async () => {
   }
 }
 
-watch([keyword, statusFilter, teamFilter, assigneeFilter], loadRequests)
+watch(keyword, () => {
+  window.clearTimeout(keywordTimer)
+  keywordTimer = window.setTimeout(loadRequests, 300)
+})
+watch([statusFilter, teamFilter, assigneeFilter], loadRequests)
+onBeforeUnmount(() => window.clearTimeout(keywordTimer))
 onMounted(() => {
   loadTeams()
   loadUsers()

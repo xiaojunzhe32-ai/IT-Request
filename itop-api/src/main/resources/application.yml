@@ -9,9 +9,9 @@ spring:
       max-request-size: 50MB
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/itop
-    username: itop
-    password: itop123
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/itop}
+    username: ${SPRING_DATASOURCE_USERNAME:itop}
+    password: ${SPRING_DATASOURCE_PASSWORD:}
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 10
@@ -56,9 +56,9 @@ server:
 logging:
   level:
     root: INFO
-    com.itop: DEBUG
-    org.hibernate.SQL: DEBUG
-    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    com.itop: INFO
+    org.hibernate.SQL: WARN
+    org.hibernate.type.descriptor.sql.BasicBinder: WARN
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
 
@@ -73,8 +73,8 @@ management:
 
 # JWT Configuration
 jwt:
-  secret: YourSecretKeyForJWTTokenGenerationMustBe256BitsOrLonger
-  expiration: 86400000 # 24 hours in milliseconds
+  secret: ${JWT_SECRET:}
+  expiration: ${JWT_EXPIRATION:86400000} # 24 hours in milliseconds
   header: Authorization
   prefix: "Bearer "
 
@@ -82,6 +82,10 @@ jwt:
 itop:
   version: 1.0.0
   default-language: zh_CN
+  security:
+    swagger-enabled: ${ITOP_SWAGGER_ENABLED:false}
+    cors:
+      allowed-origin-patterns: ${CORS_ALLOWED_ORIGIN_PATTERNS:}
   pagination:
     default-page-size: 20
     max-page-size: 100

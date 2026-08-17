@@ -22,6 +22,8 @@ Thumbs.db
 
 # env
 .env
+.env.*
+!.env.example
 .env.local
 .env.*.local
 
@@ -53,3 +55,31 @@ upload-restriction-proposal/
 *.tar
 *.tar.gz
 *.tar.bz2
+*.tgz
+*.xz
+*.zip
+*.gz
+*.7z
+*.rar
+*.jar
+*.war
+*.ear
+
+# local database dumps and backups
+/backups/
+/db-dumps/
+/*.sql
+*.dump
+*.pgdump
+*.backup
+*.bak
+
+# local planning documents
+/docs/
+
+# local UI mockups and generated visual drafts
+/mockups/
+
+# filled deployment forms may contain server credentials
+/DEPLOYMENT_ENVIRONMENT_FORM.filled*.md
+/DEPLOYMENT_ENVIRONMENT_FORM.*.private.md

@@ -214,10 +214,6 @@
                 <strong>{{ request.requester || '-' }}</strong>
               </div>
               <div class="field-row">
-                <span>Organization</span>
-                <strong>{{ request.requesterOrg || '-' }}</strong>
-              </div>
-              <div class="field-row">
                 <span>Affected Service</span>
                 <strong>{{ request.affectedService ? affectedServiceLabel(request.affectedService) : '-' }}</strong>
               </div>
@@ -228,10 +224,6 @@
               <div class="field-row">
                 <span>Resolution Time</span>
                 <strong>{{ request.requestedResolutionTime ? formatDateTime(request.requestedResolutionTime) : '-' }}</strong>
-              </div>
-              <div class="field-row">
-                <span>Tester</span>
-                <strong>{{ request.tester || '-' }}</strong>
               </div>
             </div>
           </div>

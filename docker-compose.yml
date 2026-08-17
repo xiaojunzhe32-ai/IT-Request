@@ -7,7 +7,7 @@ services:
     environment:
       POSTGRES_DB: itop
       POSTGRES_USER: itop
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-itop123}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD must be set}
       PGDATA: /var/lib/postgresql/data/pgdata
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -43,12 +43,14 @@ services:
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/itop
       SPRING_DATASOURCE_USERNAME: itop
-      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-itop123}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD must be set}
       SPRING_JPA_HIBERNATE_DDL_AUTO: validate
       SPRING_FLYWAY_ENABLED: "true"
       SPRING_FLYWAY_BASELINE_ON_MIGRATE: "true"
-      JWT_SECRET: ${JWT_SECRET:-YourSecretKeyForJWTTokenGenerationMustBe256BitsOrLonger}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set}
       JWT_EXPIRATION: ${JWT_EXPIRATION:-86400000}
+      CORS_ALLOWED_ORIGIN_PATTERNS: ${CORS_ALLOWED_ORIGIN_PATTERNS:-}
+      ITOP_SWAGGER_ENABLED: ${ITOP_SWAGGER_ENABLED:-false}
       APP_UPLOAD_DIR: /app/uploads
       JAVA_OPTS: -Xms512m -Xmx1024m -XX:+UseG1GC
     volumes:
